@@ -1,0 +1,55 @@
+# Dependabot version updates for TMO-G5AR-Portal
+
+# Keeps npm dependencies and GitHub Actions up to date.
+
+version: 2
+
+updates:
+
+# npm / Node.js dependencies
+
+* package-ecosystem: "npm"
+  directory: "/"
+  schedule:
+  interval: "weekly"
+  day: "monday"
+  time: "09:00"
+  timezone: "America/Chicago"
+  open-pull-requests-limit: 5
+  labels:
+
+  * "dependencies"
+  * "security"
+    commit-message:
+    prefix: "deps"
+    include: "scope"
+    groups:
+    production-dependencies:
+    dependency-type: "production"
+    update-types:
+
+    * "minor"
+    * "patch"
+      development-dependencies:
+      dependency-type: "development"
+      update-types:
+    * "minor"
+    * "patch"
+
+# GitHub Actions workflow dependencies
+
+* package-ecosystem: "github-actions"
+  directory: "/"
+  schedule:
+  interval: "weekly"
+  day: "monday"
+  time: "09:30"
+  timezone: "America/Chicago"
+  open-pull-requests-limit: 3
+  labels:
+
+  * "dependencies"
+  * "github-actions"
+    commit-message:
+    prefix: "ci"
+    include: "scope"
