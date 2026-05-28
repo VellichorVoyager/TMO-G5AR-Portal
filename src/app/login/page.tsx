@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { resetAuthPollingState } from "@/hooks/use-router-data"
 import { Loader2, Eye, EyeOff, Globe, User, Lock } from "lucide-react"
 import Image from "next/image"
 
@@ -49,6 +50,8 @@ export default function LoginPage() {
       const data = await response.json()
 
       if (data.success) {
+        resetAuthPollingState()
+
         // Save router IP
         localStorage.setItem("router_ip", routerIp)
 

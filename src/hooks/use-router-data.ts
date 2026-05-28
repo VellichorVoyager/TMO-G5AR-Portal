@@ -1,12 +1,20 @@
 "use client"
 
 import useSWR from "swr"
+import { POLL_INTERVAL_FAST, POLL_INTERVAL_SLOW } from "@/lib/config"
 
 // Track if we're already redirecting to prevent multiple redirects
 let isRedirecting = false
+let shouldStopPolling = false
+
+export function resetAuthPollingState() {
+  isRedirecting = false
+  shouldStopPolling = false
+}
 
 async function handleUnauthorized() {
   if (isRedirecting) return
+  shouldStopPolling = true
   isRedirecting = true
 
   // Clear cookies on server and wait for response
@@ -29,9 +37,9 @@ async function handleUnauthorized() {
 }
 
 const fetcher = async (url: string) => {
-  // Don't fetch if we're already redirecting
-  if (isRedirecting) {
-    return new Promise(() => {})
+  // Stop all polling once auth has failed and redirect has started
+  if (shouldStopPolling || isRedirecting) {
+    throw new Error("Not authenticated")
   }
 
   const res = await fetch(url, {
@@ -41,16 +49,18 @@ const fetcher = async (url: string) => {
 
   // Check for 401 status before parsing JSON
   if (res.status === 401) {
-    handleUnauthorized()
-    return new Promise(() => {})
+    shouldStopPolling = true
+    void handleUnauthorized()
+    throw new Error("Not authenticated")
   }
 
   const data = await res.json()
 
   // Also check for auth error in response body
   if (data.error === "Not authenticated") {
-    handleUnauthorized()
-    return new Promise(() => {})
+    shouldStopPolling = true
+    void handleUnauthorized()
+    throw new Error("Not authenticated")
   }
 
   return data
@@ -64,49 +74,64 @@ export interface GatewayHealthStatus {
 
 export function useGatewayHealth() {
   return useSWR<GatewayHealthStatus>("/api/router/health", fetcher, {
-    refreshInterval: 5000,
+    refreshInterval: () => (shouldStopPolling ? 0 : POLL_INTERVAL_FAST),
     revalidateOnFocus: true,
+    shouldRetryOnError: false,
   })
 }
 
 export function useGatewayInfo() {
+  return useGatewayInfoWithInterval(POLL_INTERVAL_FAST)
+}
+
+function useGatewayInfoWithInterval(interval: number) {
   return useSWR("/api/router/gateway", fetcher, {
-    refreshInterval: 5000,
+    refreshInterval: () => (shouldStopPolling ? 0 : interval),
     keepPreviousData: true,
+    shouldRetryOnError: false,
   })
+}
+
+export function useGatewayInfoSlow() {
+  return useGatewayInfoWithInterval(POLL_INTERVAL_SLOW)
 }
 
 export function useSignalInfo() {
   return useSWR("/api/router/signal", fetcher, {
-    refreshInterval: 3000,
+    refreshInterval: () => (shouldStopPolling ? 0 : POLL_INTERVAL_FAST),
     keepPreviousData: true,
+    shouldRetryOnError: false,
   })
 }
 
 export function useCellInfo() {
   return useSWR("/api/router/cell", fetcher, {
-    refreshInterval: 5000,
+    refreshInterval: () => (shouldStopPolling ? 0 : POLL_INTERVAL_FAST),
     keepPreviousData: true,
+    shouldRetryOnError: false,
   })
 }
 
 export function useClients() {
   return useSWR("/api/router/clients", fetcher, {
-    refreshInterval: 10000,
+    refreshInterval: () => (shouldStopPolling ? 0 : POLL_INTERVAL_FAST * 2),
     keepPreviousData: true,
+    shouldRetryOnError: false,
   })
 }
 
 export function useSimInfo() {
   return useSWR("/api/router/sim", fetcher, {
-    refreshInterval: 30000,
+    refreshInterval: () => (shouldStopPolling ? 0 : POLL_INTERVAL_SLOW),
     keepPreviousData: true,
+    shouldRetryOnError: false,
   })
 }
 
 export function useApConfig() {
   return useSWR("/api/router/ap", fetcher, {
-    refreshInterval: 30000,
+    refreshInterval: () => (shouldStopPolling ? 0 : POLL_INTERVAL_SLOW),
+    shouldRetryOnError: false,
   })
 }
 
@@ -116,7 +141,8 @@ export interface VersionInfo {
 
 export function useVersion() {
   return useSWR<VersionInfo>("/api/router/version", fetcher, {
-    refreshInterval: 60000, // Check every minute
+    refreshInterval: () => (shouldStopPolling ? 0 : POLL_INTERVAL_SLOW),
+    shouldRetryOnError: false,
   })
 }
 
@@ -192,6 +218,7 @@ export interface TelemetryAll {
 // Combined telemetry hook - fetches cell, clients, and sim in one call
 export function useTelemetryAll() {
   return useSWR<TelemetryAll>("/api/router/telemetry", fetcher, {
-    refreshInterval: 5000,
+    refreshInterval: () => (shouldStopPolling ? 0 : POLL_INTERVAL_FAST),
+    shouldRetryOnError: false,
   })
 }

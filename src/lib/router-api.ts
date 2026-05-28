@@ -1,10 +1,55 @@
 import { cookies } from "next/headers"
+import { REQUEST_TIMEOUT_MS } from "@/lib/config"
 
 const DEFAULT_ROUTER_IP = "192.168.12.1"
+const ROUTER_HOST_PATTERN = /^(?:\d{1,3}(?:\.\d{1,3}){3}|[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)*)$/
+const IPV4_PATTERN = /^\d{1,3}(?:\.\d{1,3}){3}$/
+
+export class RouterRequestError extends Error {
+  status?: number
+  code?: string
+
+  constructor(message: string, status?: number, code?: string) {
+    super(message)
+    this.name = "RouterRequestError"
+    this.status = status
+    this.code = code
+  }
+}
+
+function isValidIpv4(value: string): boolean {
+  const parts = value.split(".")
+  return parts.length === 4 && parts.every((part) => {
+    const num = Number(part)
+    return Number.isInteger(num) && num >= 0 && num <= 255
+  })
+}
+
+export function normalizeRouterHost(value: string): string {
+  const trimmed = value.trim()
+  if (!trimmed || !ROUTER_HOST_PATTERN.test(trimmed)) {
+    throw new RouterRequestError("Invalid router IP or hostname format", undefined, "INVALID_ROUTER_HOST")
+  }
+
+  if (IPV4_PATTERN.test(trimmed)) {
+    if (!isValidIpv4(trimmed)) {
+      throw new RouterRequestError("Invalid router IP or hostname format", undefined, "INVALID_ROUTER_HOST")
+    }
+  }
+
+  return trimmed
+}
 
 export function getRouterIp(): string {
   const cookieStore = cookies()
-  return cookieStore.get("router_ip")?.value || DEFAULT_ROUTER_IP
+  const cookieRouterIp = cookieStore.get("router_ip")?.value
+  if (!cookieRouterIp) return DEFAULT_ROUTER_IP
+
+  try {
+    return normalizeRouterHost(cookieRouterIp)
+  } catch {
+    return DEFAULT_ROUTER_IP
+  }
 }
 
 export function getAuthToken(): string {
@@ -20,9 +65,9 @@ export function getAuthToken(): string {
 
 export async function routerFetch<T>(
   endpoint: string,
-  options: { auth?: boolean; method?: string; body?: unknown } = {}
+  options: { auth?: boolean; method?: string; body?: unknown; routerIp?: string; timeoutMs?: number } = {}
 ): Promise<T> {
-  const { auth = false, method = "GET", body } = options
+  const { auth = false, method = "GET", body, routerIp: explicitRouterIp, timeoutMs = REQUEST_TIMEOUT_MS } = options
 
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
@@ -33,20 +78,42 @@ export async function routerFetch<T>(
     headers["Authorization"] = `Bearer ${token}`
   }
 
-  const routerIp = getRouterIp()
-  const response = await fetch(`http://${routerIp}${endpoint}`, {
-    method,
-    headers,
-    body: body ? JSON.stringify(body) : undefined,
-  })
+  const routerIp = explicitRouterIp ? normalizeRouterHost(explicitRouterIp) : getRouterIp()
+  const controller = new AbortController()
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs)
+
+  let response: Response
+  try {
+    response = await fetch(`http://${routerIp}${endpoint}`, {
+      method,
+      headers,
+      body: body ? JSON.stringify(body) : undefined,
+      signal: controller.signal,
+    })
+  } catch (error) {
+    const isErrorObject = error instanceof Error
+    const errorMessage = isErrorObject
+      ? error.message
+      : "Network request failed with non-Error exception"
+    const isTimeout = isErrorObject && error.name === "AbortError"
+    const message = isTimeout
+      ? `Request timeout after ${timeoutMs}ms`
+      : errorMessage
+    throw new RouterRequestError(message, undefined, isTimeout ? "TIMEOUT" : "NETWORK_ERROR")
+  } finally {
+    clearTimeout(timeoutId)
+  }
 
   if (!response.ok) {
     // Handle authentication errors from the gateway
-    if (response.status === 401 || response.status === 403) {
-      throw new Error("Not authenticated")
+    if (auth && (response.status === 401 || response.status === 403)) {
+      throw new RouterRequestError("Not authenticated", response.status)
     }
     const error = await response.json().catch(() => ({}))
-    throw new Error(error.result?.message || `Request failed: ${response.status}`)
+    throw new RouterRequestError(
+      error.result?.message || `Request failed: ${response.status}`,
+      response.status
+    )
   }
 
   // Handle empty responses (common for POST requests)
@@ -205,6 +272,16 @@ export interface VersionInfo {
   version: number
 }
 
+export interface LoginResponse {
+  auth?: {
+    token: string
+    expiration: number
+  }
+  result?: {
+    message?: string
+  }
+}
+
 // Combined telemetry response (cell + clients + sim in one call)
 export interface TelemetryAll {
   cell: {
@@ -295,4 +372,16 @@ export async function getVersion(): Promise<VersionInfo> {
 
 export async function getTelemetryAll(): Promise<TelemetryAll> {
   return routerFetch<TelemetryAll>("/TMI/v1/network/telemetry?get=all", { auth: true })
+}
+
+export async function loginRouter(
+  username: string,
+  password: string,
+  routerIp: string
+): Promise<LoginResponse> {
+  return routerFetch<LoginResponse>("/TMI/v1/auth/login", {
+    method: "POST",
+    body: { username, password },
+    routerIp,
+  })
 }
