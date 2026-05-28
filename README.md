@@ -1,5 +1,9 @@
 # TMO-G5AR Portal
 
+![Release](https://img.shields.io/github/v/release/VellichorVoyager/TMO-G5AR-Portal)
+![CodeQL](https://github.com/VellichorVoyager/TMO-G5AR-Portal/actions/workflows/codeql.yml/badge.svg)
+![License](https://img.shields.io/github/license/VellichorVoyager/TMO-G5AR-Portal)
+
 A modern web admin interface for the T-Mobile Arcadyan G5AR 5G Gateway, built with Next.js and shadcn/ui.
 
 [![GitHub](https://img.shields.io/badge/GitHub-rchen14b-181717?style=flat&logo=github)](https://github.com/rchen14b/TMO-G5AR-Portal)
