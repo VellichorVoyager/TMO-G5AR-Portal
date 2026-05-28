@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 import { cookies } from "next/headers"
-import { COOKIE_SAMESITE, EFFECTIVE_COOKIE_SECURE } from "@/lib/config"
+import { COOKIE_SAMESITE, EFFECTIVE_COOKIE_SECURE } from "@/lib/config-server"
 import { loginRouter, normalizeRouterHost, RouterRequestError } from "@/lib/router-api"
 
 const DEFAULT_ROUTER_HOST = "192.168.12.1"

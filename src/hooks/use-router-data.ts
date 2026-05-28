@@ -5,7 +5,7 @@ import {
   NEXT_PUBLIC_REVALIDATE_ON_FOCUS,
   POLL_INTERVAL_FAST,
   POLL_INTERVAL_SLOW,
-} from "@/lib/config"
+} from "@/lib/config-client"
 
 // Track if we're already redirecting to prevent multiple redirects
 let isRedirecting = false

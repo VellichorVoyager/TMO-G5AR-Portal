@@ -3,7 +3,7 @@ import {
   ALLOW_CUSTOM_GATEWAY_HOST,
   GATEWAY_ALLOWED_HOSTS,
   REQUEST_TIMEOUT_MS,
-} from "@/lib/config"
+} from "@/lib/config-server"
 import {
   DEFAULT_ROUTER_HOST,
   normalizeAndValidateRouterHost,
