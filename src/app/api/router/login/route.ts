@@ -22,10 +22,11 @@ export async function POST(request: Request) {
     return NextResponse.json({ success: false, error: "Invalid JSON" }, { status: 400 })
   }
 
-  const { username, password, routerHost } = body as {
+  const { username, password, routerHost, routerIp } = body as {
     username?: unknown
     password?: unknown
     routerHost?: unknown
+    routerIp?: unknown
   }
 
   if (
@@ -41,7 +42,11 @@ export async function POST(request: Request) {
   }
 
   const requestedRouterHost =
-    typeof routerHost === "string" && routerHost.trim() ? routerHost : DEFAULT_ROUTER_HOST
+    typeof routerHost === "string" && routerHost.trim()
+      ? routerHost
+      : typeof routerIp === "string" && routerIp.trim()
+        ? routerIp
+        : DEFAULT_ROUTER_HOST
 
   try {
     const normalizedRouterHost = normalizeRouterHost(requestedRouterHost)
