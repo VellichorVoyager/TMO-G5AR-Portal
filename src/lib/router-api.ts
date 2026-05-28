@@ -1,9 +1,17 @@
 import { cookies } from "next/headers"
-import { REQUEST_TIMEOUT_MS } from "@/lib/config"
+import {
+  ALLOW_CUSTOM_GATEWAY_HOST,
+  GATEWAY_ALLOWED_HOSTS,
+  REQUEST_TIMEOUT_MS,
+} from "@/lib/config"
+import {
+  DEFAULT_ROUTER_HOST,
+  normalizeAndValidateRouterHost,
+  parseGatewayAllowedHosts,
+} from "@/lib/router-host"
 
-const DEFAULT_ROUTER_IP = "192.168.12.1"
-const ROUTER_HOST_PATTERN = /^(?:\d{1,3}(?:\.\d{1,3}){3}|[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)*)$/
-const IPV4_PATTERN = /^\d{1,3}(?:\.\d{1,3}){3}$/
+const DEFAULT_ROUTER_IP = DEFAULT_ROUTER_HOST
+const GATEWAY_ALLOWED_HOSTS_SET = parseGatewayAllowedHosts(GATEWAY_ALLOWED_HOSTS)
 
 export class RouterRequestError extends Error {
   status?: number
@@ -17,27 +25,16 @@ export class RouterRequestError extends Error {
   }
 }
 
-function isValidIpv4(value: string): boolean {
-  const parts = value.split(".")
-  return parts.length === 4 && parts.every((part) => {
-    const num = Number(part)
-    return Number.isInteger(num) && num >= 0 && num <= 255
-  })
-}
-
 export function normalizeRouterHost(value: string): string {
-  const trimmed = value.trim()
-  if (!trimmed || !ROUTER_HOST_PATTERN.test(trimmed)) {
-    throw new RouterRequestError("Invalid router IP or hostname format", undefined, "INVALID_ROUTER_HOST")
+  try {
+    return normalizeAndValidateRouterHost(value, {
+      allowCustomGatewayHost: ALLOW_CUSTOM_GATEWAY_HOST,
+      allowedHosts: GATEWAY_ALLOWED_HOSTS_SET,
+    })
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Invalid router host"
+    throw new RouterRequestError(message, undefined, "INVALID_ROUTER_HOST")
   }
-
-  if (IPV4_PATTERN.test(trimmed)) {
-    if (!isValidIpv4(trimmed)) {
-      throw new RouterRequestError("Invalid router IP or hostname format", undefined, "INVALID_ROUTER_HOST")
-    }
-  }
-
-  return trimmed
 }
 
 export function getRouterIp(): string {
@@ -122,7 +119,11 @@ export async function routerFetch<T>(
     return {} as T
   }
 
-  return JSON.parse(text)
+  try {
+    return JSON.parse(text)
+  } catch {
+    throw new RouterRequestError("Router returned malformed JSON", response.status, "INVALID_JSON")
+  }
 }
 
 // API Types

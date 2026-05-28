@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
 import { RefreshControl } from "@/components/refresh-control"
 import { useGatewayInfo, useVersion } from "@/hooks/use-router-data"
+import { ENABLE_WRITE_ACTIONS } from "@/lib/config"
 import { formatUptime } from "@/lib/utils"
 import {
   Server,
@@ -188,8 +189,13 @@ export default function SystemPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
+            {!ENABLE_WRITE_ACTIONS && (
+              <p className="text-sm text-muted-foreground mb-4">
+                Read-only mode: write actions are disabled.
+              </p>
+            )}
             <div className="flex flex-wrap gap-4">
-              {!showConfirm ? (
+              {!ENABLE_WRITE_ACTIONS ? null : !showConfirm ? (
                 <Button
                   variant="destructive"
                   onClick={() => setShowConfirm(true)}

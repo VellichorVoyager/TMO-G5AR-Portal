@@ -91,6 +91,15 @@ Login with your gateway credentials (found on the label of your device). The def
 | `POLL_INTERVAL_SLOW` | `30000` | Optional alias for slow polling baseline (used as fallback when `NEXT_PUBLIC_POLL_INTERVAL_SLOW` is unset at build time) |
 | `NEXT_PUBLIC_POLL_INTERVAL_FAST` | `5000` | Fast polling interval used by client SWR hooks |
 | `NEXT_PUBLIC_POLL_INTERVAL_SLOW` | `30000` | Slow polling interval used by client SWR hooks |
+| `NEXT_PUBLIC_REVALIDATE_ON_FOCUS` | `false` | Enables/disables SWR `revalidateOnFocus` behavior for polling hooks |
+| `ALLOW_CUSTOM_GATEWAY_HOST` | `false` | Keeps gateway host pinned to `192.168.12.1` unless custom private hosts are explicitly enabled/allowlisted |
+| `GATEWAY_ALLOWED_HOSTS` | _(empty)_ | Comma-separated router host allowlist (IPv4 or explicit hostnames) |
+| `COOKIE_SECURE` | `false` | Sets `Secure` flag on auth/router cookies |
+| `COOKIE_SAMESITE` | `strict` | Sets `SameSite` on auth/router cookies (`strict`, `lax`, `none`) |
+| `ENABLE_WRITE_ACTIONS` | `false` | Blocks mutation API routes (`/api/router/reboot`, `/api/router/ap`) when disabled |
+| `NEXT_PUBLIC_ENABLE_WRITE_ACTIONS` | `false` | Optional client alias to keep UI write controls in sync with server-side mutation gating |
+
+Gateway access is now safe-by-default: only `192.168.12.1` is accepted unless you explicitly configure `GATEWAY_ALLOWED_HOSTS` and/or `ALLOW_CUSTOM_GATEWAY_HOST`.
 
 ## Docker
 
