@@ -1,19 +1,50 @@
 import { NextResponse } from "next/server"
 import { cookies } from "next/headers"
-import { COOKIE_SAMESITE, EFFECTIVE_COOKIE_SECURE } from "@/lib/config"
+import { COOKIE_SAMESITE, EFFECTIVE_COOKIE_SECURE } from "@/lib/config-server"
 import { loginRouter, normalizeRouterHost, RouterRequestError } from "@/lib/router-api"
 
-const DEFAULT_ROUTER_IP = "192.168.12.1"
+const DEFAULT_ROUTER_HOST = "192.168.12.1"
+const ROUTER_HOST_COOKIE = "router_ip"
 const INVALID_ROUTER_HOST_FORMAT_ERROR = "Invalid router IP or hostname"
 const INVALID_ROUTER_HOST_FORMAT_RESPONSE = "Invalid router IP or hostname format"
 const ROUTER_HOST_POLICY_ERROR =
   "Router host is not allowed by the current gateway host policy"
 
 export async function POST(request: Request) {
+  let body: unknown
   try {
-    const { username, password, routerIp } = await request.json()
-    const ip = routerIp || DEFAULT_ROUTER_IP
-    const normalizedRouterHost = normalizeRouterHost(ip)
+    body = await request.json()
+  } catch {
+    return NextResponse.json({ success: false, error: "Invalid JSON" }, { status: 400 })
+  }
+
+  if (typeof body !== "object" || body === null || Array.isArray(body)) {
+    return NextResponse.json({ success: false, error: "Invalid JSON" }, { status: 400 })
+  }
+
+  const { username, password, routerHost } = body as {
+    username?: unknown
+    password?: unknown
+    routerHost?: unknown
+  }
+
+  if (
+    typeof username !== "string" ||
+    typeof password !== "string" ||
+    !username.trim() ||
+    !password.trim()
+  ) {
+    return NextResponse.json(
+      { success: false, error: "Username and password are required" },
+      { status: 400 }
+    )
+  }
+
+  const requestedRouterHost =
+    typeof routerHost === "string" && routerHost.trim() ? routerHost : DEFAULT_ROUTER_HOST
+
+  try {
+    const normalizedRouterHost = normalizeRouterHost(requestedRouterHost)
 
     const data = await loginRouter(username, password, normalizedRouterHost)
 
@@ -35,7 +66,8 @@ export async function POST(request: Request) {
         path: "/",
       })
 
-      cookies().set("router_ip", normalizedRouterHost, {
+      // Keep the legacy router_ip cookie name for compatibility with existing sessions.
+      cookies().set(ROUTER_HOST_COOKIE, normalizedRouterHost, {
         httpOnly: true,
         secure: EFFECTIVE_COOKIE_SECURE,
         sameSite: COOKIE_SAMESITE,

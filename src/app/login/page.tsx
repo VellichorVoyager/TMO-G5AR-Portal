@@ -12,7 +12,7 @@ import Image from "next/image"
 
 export default function LoginPage() {
   const router = useRouter()
-  const [routerIp, setRouterIp] = useState("192.168.12.1")
+  const [routerHost, setRouterHost] = useState("192.168.12.1")
   const [username, setUsername] = useState("")
   const [password, setPassword] = useState("")
   const [showPassword, setShowPassword] = useState(false)
@@ -22,10 +22,11 @@ export default function LoginPage() {
 
   // Load saved settings on mount
   useEffect(() => {
-    const savedIp = localStorage.getItem("router_ip")
-    if (savedIp) {
+    // Keep the legacy router_ip storage key so existing browsers retain their selected host.
+    const savedRouterHost = localStorage.getItem("router_ip")
+    if (savedRouterHost) {
       try {
-        setRouterIp(canonicalizeRouterHost(savedIp))
+        setRouterHost(canonicalizeRouterHost(savedRouterHost))
       } catch {
         localStorage.removeItem("router_ip")
       }
@@ -49,7 +50,7 @@ export default function LoginPage() {
       const response = await fetch("/api/router/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username, password, routerIp }),
+        body: JSON.stringify({ username, password, routerHost }),
       })
 
       const data = await response.json()
@@ -57,10 +58,8 @@ export default function LoginPage() {
       if (data.success) {
         resetAuthPollingState()
 
-        const normalizedRouterHost = data.routerHost
-          ? canonicalizeRouterHost(data.routerHost)
-          : canonicalizeRouterHost(routerIp)
-        setRouterIp(normalizedRouterHost)
+        const normalizedRouterHost = canonicalizeRouterHost(data.routerHost || routerHost)
+        setRouterHost(normalizedRouterHost)
         localStorage.setItem("router_ip", normalizedRouterHost)
 
         // Save or clear remembered username
@@ -110,15 +109,15 @@ export default function LoginPage() {
           {/* Form */}
           <form onSubmit={handleLogin} className="space-y-6">
             <div className="space-y-2">
-              <Label htmlFor="routerIp">Gateway IP</Label>
+              <Label htmlFor="routerHost">Gateway Host</Label>
               <div className="relative">
                 <Globe className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
                 <Input
-                  id="routerIp"
+                  id="routerHost"
                   type="text"
-                  value={routerIp}
-                  onChange={(e) => setRouterIp(e.target.value)}
-                  placeholder="192.168.12.1"
+                  value={routerHost}
+                  onChange={(e) => setRouterHost(e.target.value)}
+                  placeholder="192.168.12.1 or gateway.local"
                   className="h-12 pl-12 rounded-xl bg-white/50 dark:bg-white/5 border-white/20"
                 />
               </div>

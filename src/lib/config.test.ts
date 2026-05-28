@@ -1,6 +1,6 @@
 import test from "node:test"
 import assert from "node:assert/strict"
-import { toBoolean, toEffectiveCookieSecure, toSameSite, toWriteActionsEnabled } from "@/lib/config"
+import { toBoolean, toEffectiveCookieSecure, toSameSite, toWriteActionsEnabled } from "@/lib/config-shared"
 
 test("toBoolean parses common true/false forms", () => {
   assert.equal(toBoolean("true", false), true)

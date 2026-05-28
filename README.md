@@ -87,10 +87,8 @@ Login with your gateway credentials (found on the label of your device). The def
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `REQUEST_TIMEOUT_MS` | `5000` | Timeout used by gateway proxy requests (`routerFetch`) |
-| `POLL_INTERVAL_FAST` | `5000` | Optional alias for fast polling baseline (used as fallback when `NEXT_PUBLIC_POLL_INTERVAL_FAST` is unset at build time) |
-| `POLL_INTERVAL_SLOW` | `30000` | Optional alias for slow polling baseline (used as fallback when `NEXT_PUBLIC_POLL_INTERVAL_SLOW` is unset at build time) |
-| `NEXT_PUBLIC_POLL_INTERVAL_FAST` | `5000` | Fast polling interval used by client SWR hooks |
-| `NEXT_PUBLIC_POLL_INTERVAL_SLOW` | `30000` | Slow polling interval used by client SWR hooks |
+| `NEXT_PUBLIC_POLL_INTERVAL_FAST` | `5000` | Fast polling interval used by client SWR hooks; client polling only reads this public variable |
+| `NEXT_PUBLIC_POLL_INTERVAL_SLOW` | `30000` | Slow polling interval used by client SWR hooks; client polling only reads this public variable |
 | `NEXT_PUBLIC_REVALIDATE_ON_FOCUS` | `false` | Enables/disables SWR `revalidateOnFocus` behavior for polling hooks |
 | `ALLOW_CUSTOM_GATEWAY_HOST` | `false` | Keeps gateway host pinned to `192.168.12.1` unless custom private hosts are explicitly enabled/allowlisted |
 | `GATEWAY_ALLOWED_HOSTS` | _(empty)_ | Comma-separated router host allowlist (IPv4 or explicit hostnames); invalid entries are ignored with a warning |

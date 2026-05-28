@@ -3,14 +3,14 @@ import {
   ALLOW_CUSTOM_GATEWAY_HOST,
   GATEWAY_ALLOWED_HOSTS,
   REQUEST_TIMEOUT_MS,
-} from "@/lib/config"
+} from "@/lib/config-server"
 import {
   DEFAULT_ROUTER_HOST,
   normalizeAndValidateRouterHost,
   parseGatewayAllowedHosts,
 } from "@/lib/router-host"
 
-const DEFAULT_ROUTER_IP = DEFAULT_ROUTER_HOST
+const ROUTER_HOST_COOKIE = "router_ip"
 const GATEWAY_ALLOWED_HOSTS_SET = parseGatewayAllowedHosts(GATEWAY_ALLOWED_HOSTS)
 
 export class RouterRequestError extends Error {
@@ -37,15 +37,16 @@ export function normalizeRouterHost(value: string): string {
   }
 }
 
-export function getRouterIp(): string {
+export function getRouterHost(): string {
   const cookieStore = cookies()
-  const cookieRouterIp = cookieStore.get("router_ip")?.value
-  if (!cookieRouterIp) return DEFAULT_ROUTER_IP
+  // Keep the legacy router_ip cookie name so existing sessions retain their selected host.
+  const cookieRouterHost = cookieStore.get(ROUTER_HOST_COOKIE)?.value
+  if (!cookieRouterHost) return DEFAULT_ROUTER_HOST
 
   try {
-    return normalizeRouterHost(cookieRouterIp)
+    return normalizeRouterHost(cookieRouterHost)
   } catch {
-    return DEFAULT_ROUTER_IP
+    return DEFAULT_ROUTER_HOST
   }
 }
 
@@ -62,9 +63,9 @@ export function getAuthToken(): string {
 
 export async function routerFetch<T>(
   endpoint: string,
-  options: { auth?: boolean; method?: string; body?: unknown; routerIp?: string; timeoutMs?: number } = {}
+  options: { auth?: boolean; method?: string; body?: unknown; routerHost?: string; timeoutMs?: number } = {}
 ): Promise<T> {
-  const { auth = false, method = "GET", body, routerIp: explicitRouterIp, timeoutMs = REQUEST_TIMEOUT_MS } = options
+  const { auth = false, method = "GET", body, routerHost: explicitRouterHost, timeoutMs = REQUEST_TIMEOUT_MS } = options
 
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
@@ -75,13 +76,13 @@ export async function routerFetch<T>(
     headers["Authorization"] = `Bearer ${token}`
   }
 
-  const routerIp = explicitRouterIp ? normalizeRouterHost(explicitRouterIp) : getRouterIp()
+  const routerHost = explicitRouterHost ? normalizeRouterHost(explicitRouterHost) : getRouterHost()
   const controller = new AbortController()
   const timeoutId = setTimeout(() => controller.abort(), timeoutMs)
 
   let response: Response
   try {
-    response = await fetch(`http://${routerIp}${endpoint}`, {
+    response = await fetch(`http://${routerHost}${endpoint}`, {
       method,
       headers,
       body: body ? JSON.stringify(body) : undefined,
@@ -367,8 +368,8 @@ export async function rebootGateway(): Promise<void> {
   })
 }
 
-export async function getVersion(): Promise<VersionInfo> {
-  return routerFetch<VersionInfo>("/TMI/v1/version")
+export async function getVersion(options: { routerHost?: string } = {}): Promise<VersionInfo> {
+  return routerFetch<VersionInfo>("/TMI/v1/version", options)
 }
 
 export async function getTelemetryAll(): Promise<TelemetryAll> {
@@ -378,11 +379,11 @@ export async function getTelemetryAll(): Promise<TelemetryAll> {
 export async function loginRouter(
   username: string,
   password: string,
-  routerIp: string
+  routerHost: string
 ): Promise<LoginResponse> {
   return routerFetch<LoginResponse>("/TMI/v1/auth/login", {
     method: "POST",
     body: { username, password },
-    routerIp,
+    routerHost,
   })
 }

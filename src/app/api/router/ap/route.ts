@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server"
-import { ENABLE_WRITE_ACTIONS } from "@/lib/config"
+import { ENABLE_WRITE_ACTIONS } from "@/lib/config-server"
 import { getApConfig, setApConfig } from "@/lib/router-api"
 
 export async function GET() {

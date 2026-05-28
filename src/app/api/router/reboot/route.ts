@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server"
-import { ENABLE_WRITE_ACTIONS } from "@/lib/config"
+import { ENABLE_WRITE_ACTIONS } from "@/lib/config-server"
 import { rebootGateway } from "@/lib/router-api"
 
 export async function POST() {
