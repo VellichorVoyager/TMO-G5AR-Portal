@@ -43,7 +43,8 @@ Gateway information, system status, and quick actions like reboot.
 
 ## Tech Stack
 
-- **Framework**: Next.js 14 (App Router)
+- **Framework**: Next.js 15 (App Router)
+- **React**: React 19
 - **UI Components**: shadcn/ui
 - **Styling**: Tailwind CSS
 - **Charts**: Recharts

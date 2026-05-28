@@ -37,8 +37,8 @@ export function normalizeRouterHost(value: string): string {
   }
 }
 
-export function getRouterHost(): string {
-  const cookieStore = cookies()
+export async function getRouterHost(): Promise<string> {
+  const cookieStore = await cookies()
   // Keep the legacy router_ip cookie name so existing sessions retain their selected host.
   const cookieRouterHost = cookieStore.get(ROUTER_HOST_COOKIE)?.value
   if (!cookieRouterHost) return DEFAULT_ROUTER_HOST
@@ -50,8 +50,8 @@ export function getRouterHost(): string {
   }
 }
 
-export function getAuthToken(): string {
-  const cookieStore = cookies()
+export async function getAuthToken(): Promise<string> {
+  const cookieStore = await cookies()
   const token = cookieStore.get("auth_token")?.value
 
   if (!token) {
@@ -72,11 +72,11 @@ export async function routerFetch<T>(
   }
 
   if (auth) {
-    const token = getAuthToken()
+    const token = await getAuthToken()
     headers["Authorization"] = `Bearer ${token}`
   }
 
-  const routerHost = explicitRouterHost ? normalizeRouterHost(explicitRouterHost) : getRouterHost()
+  const routerHost = explicitRouterHost ? normalizeRouterHost(explicitRouterHost) : await getRouterHost()
   const controller = new AbortController()
   const timeoutId = setTimeout(() => controller.abort(), timeoutMs)
 
