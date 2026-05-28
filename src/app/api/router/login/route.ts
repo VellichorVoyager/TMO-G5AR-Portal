@@ -3,7 +3,8 @@ import { cookies } from "next/headers"
 import { COOKIE_SAMESITE, EFFECTIVE_COOKIE_SECURE } from "@/lib/config"
 import { loginRouter, normalizeRouterHost, RouterRequestError } from "@/lib/router-api"
 
-const DEFAULT_ROUTER_IP = "192.168.12.1"
+const DEFAULT_ROUTER_HOST = "192.168.12.1"
+const ROUTER_HOST_COOKIE = "router_ip"
 const INVALID_ROUTER_HOST_FORMAT_ERROR = "Invalid router IP or hostname"
 const INVALID_ROUTER_HOST_FORMAT_RESPONSE = "Invalid router IP or hostname format"
 const ROUTER_HOST_POLICY_ERROR =
@@ -11,9 +12,9 @@ const ROUTER_HOST_POLICY_ERROR =
 
 export async function POST(request: Request) {
   try {
-    const { username, password, routerIp } = await request.json()
-    const ip = routerIp || DEFAULT_ROUTER_IP
-    const normalizedRouterHost = normalizeRouterHost(ip)
+    const { username, password, routerHost } = await request.json()
+    const requestedRouterHost = routerHost || DEFAULT_ROUTER_HOST
+    const normalizedRouterHost = normalizeRouterHost(requestedRouterHost)
 
     const data = await loginRouter(username, password, normalizedRouterHost)
 
@@ -35,7 +36,8 @@ export async function POST(request: Request) {
         path: "/",
       })
 
-      cookies().set("router_ip", normalizedRouterHost, {
+      // Keep the legacy router_ip cookie name for compatibility with existing sessions.
+      cookies().set(ROUTER_HOST_COOKIE, normalizedRouterHost, {
         httpOnly: true,
         secure: EFFECTIVE_COOKIE_SECURE,
         sameSite: COOKIE_SAMESITE,

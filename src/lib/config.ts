@@ -33,15 +33,9 @@ export const toWriteActionsEnabled = (value: string | undefined, fallback: boole
 
 export const REQUEST_TIMEOUT_MS = toNumber(process.env.REQUEST_TIMEOUT_MS, 5000)
 
-export const POLL_INTERVAL_FAST = toNumber(
-  process.env.NEXT_PUBLIC_POLL_INTERVAL_FAST ?? process.env.POLL_INTERVAL_FAST,
-  5000
-)
+export const POLL_INTERVAL_FAST = toNumber(process.env.NEXT_PUBLIC_POLL_INTERVAL_FAST, 5000)
 
-export const POLL_INTERVAL_SLOW = toNumber(
-  process.env.NEXT_PUBLIC_POLL_INTERVAL_SLOW ?? process.env.POLL_INTERVAL_SLOW,
-  30000
-)
+export const POLL_INTERVAL_SLOW = toNumber(process.env.NEXT_PUBLIC_POLL_INTERVAL_SLOW, 30000)
 
 export const COOKIE_SECURE = toBoolean(process.env.COOKIE_SECURE, false)
 export const COOKIE_SAMESITE = toSameSite(process.env.COOKIE_SAMESITE, "strict")

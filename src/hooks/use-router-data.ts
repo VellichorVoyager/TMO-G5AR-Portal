@@ -72,7 +72,7 @@ const fetcher = async (url: string) => {
 
 export interface GatewayHealthStatus {
   status: "online" | "offline" | "error"
-  ip: string
+  host: string
   message?: string
 }
 

@@ -1,7 +1,3 @@
-# Dependabot version updates for TMO-G5AR-Portal
-
-# Keeps npm dependencies and GitHub Actions up to date.
-
 version: 2
 
 updates:
