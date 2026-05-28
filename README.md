@@ -71,6 +71,9 @@ Gateway information, system status, and quick actions like reboot.
 # Install dependencies
 npm install
 
+# Configure environment
+cp .env.example .env.local
+
 # Run development server
 npm run dev
 ```
@@ -78,6 +81,16 @@ npm run dev
 Open [http://localhost:3000](http://localhost:3000) to view the portal.
 
 Login with your gateway credentials (found on the label of your device). The default username is `admin` and the default gateway IP is `192.168.12.1`.
+
+### Environment Variables
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `REQUEST_TIMEOUT_MS` | `5000` | Timeout used by gateway proxy requests (`routerFetch`) |
+| `POLL_INTERVAL_FAST` | `5000` | Fast polling interval baseline (server/docs alias) |
+| `POLL_INTERVAL_SLOW` | `30000` | Slow polling interval baseline (server/docs alias) |
+| `NEXT_PUBLIC_POLL_INTERVAL_FAST` | `5000` | Fast polling interval used by client SWR hooks |
+| `NEXT_PUBLIC_POLL_INTERVAL_SLOW` | `30000` | Slow polling interval used by client SWR hooks |
 
 ## Docker
 

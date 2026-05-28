@@ -8,7 +8,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { SignalBars } from "@/components/signal-bars"
 import { SignalBarChart } from "@/components/signal-chart"
 import { RefreshControl } from "@/components/refresh-control"
-import { useGatewayInfo, useClients } from "@/hooks/use-router-data"
+import { useGatewayInfoSlow, useTelemetryAll } from "@/hooks/use-router-data"
 import { formatUptime } from "@/lib/utils"
 import {
   Wifi,
@@ -19,22 +19,22 @@ import {
 } from "lucide-react"
 
 export default function Dashboard() {
-  const { data: gateway, isLoading: gatewayLoading, mutate: mutateGateway } = useGatewayInfo()
-  const { data: clients, isLoading: clientsLoading, mutate: mutateClients } = useClients()
+  const { data: telemetry, isLoading: telemetryLoading, mutate: mutateTelemetry } = useTelemetryAll()
+  const { data: gateway, mutate: mutateGateway } = useGatewayInfoSlow()
 
   const handleRefresh = useCallback(() => {
+    mutateTelemetry()
     mutateGateway()
-    mutateClients()
-  }, [mutateGateway, mutateClients])
+  }, [mutateGateway, mutateTelemetry])
 
-  const signal5g = gateway?.signal?.["5g"]
+  const signal5g = telemetry?.cell?.["5g"]?.sector
   const device = gateway?.device
   const time = gateway?.time
-  const generic = gateway?.signal?.generic
+  const generic = telemetry?.cell?.generic
 
-  const totalClients = clients?.clients
-    ? (clients.clients.wifi?.length || 0) +
-      (clients.clients.ethernet?.length || 0)
+  const totalClients = telemetry?.clients
+    ? (telemetry.clients.wifi?.length || 0) +
+      (telemetry.clients.ethernet?.length || 0)
     : 0
 
   return (
@@ -47,7 +47,7 @@ export default function Dashboard() {
             Monitor your T-Mobile 5G Gateway in real-time
           </p>
         </div>
-        <RefreshControl onRefresh={handleRefresh} isLoading={gatewayLoading || clientsLoading} />
+        <RefreshControl onRefresh={handleRefresh} isLoading={telemetryLoading} />
       </div>
 
       {/* Hero Section with Gateway Image */}
@@ -155,7 +155,7 @@ export default function Dashboard() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {gatewayLoading ? (
+            {telemetryLoading ? (
               <div className="space-y-6">
                 {[...Array(4)].map((_, i) => (
                   <div key={i} className="space-y-2">
@@ -190,7 +190,7 @@ export default function Dashboard() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {gatewayLoading ? (
+            {telemetryLoading ? (
               <div className="space-y-4">
                 {[...Array(6)].map((_, i) => (
                   <div key={i} className="flex justify-between">
