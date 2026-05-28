@@ -152,6 +152,24 @@ Then run:
 docker compose up -d
 ```
 
+## Safe Deployment Notes
+
+This portal is intended for local or trusted-network use. Do not expose it directly to the public internet.
+
+Recommended deployment patterns:
+
+* Run the portal locally on your LAN whenever possible.
+* Keep `ENABLE_WRITE_ACTIONS=false` unless router mutations are intentionally needed.
+* Use read-only mode for monitoring-only deployments.
+* Keep gateway credentials and `.env.local` files private.
+* Restrict custom gateway targets with `GATEWAY_ALLOWED_HOSTS`.
+* Leave `ALLOW_CUSTOM_GATEWAY_HOST=false` unless you explicitly need a custom private gateway host.
+* Place any remote access behind a trusted access layer such as Tailscale, WireGuard, Cloudflare Access, or another zero-trust gateway.
+* Do not publish router credentials, session cookies, local network details, or gateway screenshots containing sensitive identifiers.
+
+Security-sensitive routes are designed to be safe-by-default. Mutation routes such as reboot and WiFi configuration updates are blocked unless write actions are explicitly enabled through server-side configuration.
+
+
 ## Project Structure
 
 ```
