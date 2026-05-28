@@ -4,6 +4,9 @@ import { COOKIE_SAMESITE, EFFECTIVE_COOKIE_SECURE } from "@/lib/config"
 import { loginRouter, normalizeRouterHost, RouterRequestError } from "@/lib/router-api"
 
 const DEFAULT_ROUTER_IP = "192.168.12.1"
+const INVALID_ROUTER_HOST_FORMAT_ERROR = "Invalid router IP or hostname"
+const ROUTER_HOST_POLICY_ERROR =
+  "Router host is not allowed by the current gateway host policy"
 
 export async function POST(request: Request) {
   try {
@@ -49,8 +52,12 @@ export async function POST(request: Request) {
   } catch (error) {
     console.error("Login error:", error)
     if (error instanceof RouterRequestError && error.code === "INVALID_ROUTER_HOST") {
+      const message =
+        error.message === INVALID_ROUTER_HOST_FORMAT_ERROR
+          ? "Invalid router IP or hostname format"
+          : ROUTER_HOST_POLICY_ERROR
       return NextResponse.json(
-        { success: false, error: "Invalid router IP or hostname format" },
+        { success: false, error: message },
         { status: 400 }
       )
     }
