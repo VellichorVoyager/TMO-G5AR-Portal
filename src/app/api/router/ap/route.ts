@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server"
+import { ENABLE_WRITE_ACTIONS } from "@/lib/config"
 import { getApConfig, setApConfig } from "@/lib/router-api"
 
 export async function GET() {
@@ -18,6 +19,13 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
+  if (!ENABLE_WRITE_ACTIONS) {
+    return NextResponse.json(
+      { error: "Write actions are disabled by configuration (ENABLE_WRITE_ACTIONS=false)" },
+      { status: 403 }
+    )
+  }
+
   try {
     const body = await request.json()
     await setApConfig(body)

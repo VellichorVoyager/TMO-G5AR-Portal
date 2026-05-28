@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { resetAuthPollingState } from "@/hooks/use-router-data"
+import { canonicalizeRouterHost } from "@/lib/router-host"
 import { Loader2, Eye, EyeOff, Globe, User, Lock } from "lucide-react"
 import Image from "next/image"
 
@@ -23,7 +24,11 @@ export default function LoginPage() {
   useEffect(() => {
     const savedIp = localStorage.getItem("router_ip")
     if (savedIp) {
-      setRouterIp(savedIp)
+      try {
+        setRouterIp(canonicalizeRouterHost(savedIp))
+      } catch {
+        localStorage.removeItem("router_ip")
+      }
     }
 
     const savedUsername = localStorage.getItem("remembered_username")
@@ -52,8 +57,11 @@ export default function LoginPage() {
       if (data.success) {
         resetAuthPollingState()
 
-        // Save router IP
-        localStorage.setItem("router_ip", routerIp)
+        const normalizedRouterHost = data.routerHost
+          ? canonicalizeRouterHost(data.routerHost)
+          : canonicalizeRouterHost(routerIp)
+        setRouterIp(normalizedRouterHost)
+        localStorage.setItem("router_ip", normalizedRouterHost)
 
         // Save or clear remembered username
         if (rememberUsername) {

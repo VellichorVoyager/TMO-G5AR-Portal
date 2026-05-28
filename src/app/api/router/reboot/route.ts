@@ -1,7 +1,15 @@
 import { NextResponse } from "next/server"
+import { ENABLE_WRITE_ACTIONS } from "@/lib/config"
 import { rebootGateway } from "@/lib/router-api"
 
 export async function POST() {
+  if (!ENABLE_WRITE_ACTIONS) {
+    return NextResponse.json(
+      { error: "Write actions are disabled by configuration (ENABLE_WRITE_ACTIONS=false)" },
+      { status: 403 }
+    )
+  }
+
   try {
     await rebootGateway()
     return NextResponse.json({ success: true })

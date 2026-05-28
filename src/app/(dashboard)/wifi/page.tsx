@@ -9,7 +9,7 @@ import { Switch } from "@/components/ui/switch"
 import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
 import { RefreshControl } from "@/components/refresh-control"
-import { useApConfig } from "@/hooks/use-router-data"
+import { useApConfig, useRouterCapabilities } from "@/hooks/use-router-data"
 import { Wifi, Eye, EyeOff, Save, Radio, Shield, Antenna, AlertCircle } from "lucide-react"
 
 interface LocalConfig {
@@ -30,6 +30,8 @@ interface LocalConfig {
 }
 
 export default function WifiPage() {
+  const { data: capabilities } = useRouterCapabilities()
+  const writeActionsDisabled = !capabilities?.writeActionsEnabled
   const { data, isLoading, mutate } = useApConfig()
   const [showPassword, setShowPassword] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -71,6 +73,7 @@ export default function WifiPage() {
 
   // Toggle SSID band with validation (at least one must be enabled)
   const toggleSsidBand = (band: "2.4ghzSsid" | "5.0ghzSsid" | "6.0ghzSsid") => {
+    if (writeActionsDisabled) return
     if (!localConfig || !ssid) return
 
     const currentValue = ssid[band]
@@ -94,6 +97,7 @@ export default function WifiPage() {
 
   // Toggle radio band
   const toggleRadioBand = (band: "2.4ghz" | "5.0ghz" | "6.0ghz") => {
+    if (writeActionsDisabled) return
     if (!localConfig) return
 
     const currentValue = localConfig[band]?.isRadioEnabled
@@ -110,6 +114,7 @@ export default function WifiPage() {
 
   // Toggle broadcast SSID
   const toggleBroadcast = () => {
+    if (writeActionsDisabled) return
     if (!localConfig || !ssid) return
 
     const updatedSsids = [...localConfig.ssids]
@@ -127,6 +132,7 @@ export default function WifiPage() {
 
   // Update SSID name
   const updateSsidName = (name: string) => {
+    if (writeActionsDisabled) return
     if (!localConfig || !ssid) return
 
     const updatedSsids = [...localConfig.ssids]
@@ -144,6 +150,7 @@ export default function WifiPage() {
 
   // Update password
   const updatePassword = (password: string) => {
+    if (writeActionsDisabled) return
     if (!localConfig || !ssid) return
 
     const updatedSsids = [...localConfig.ssids]
@@ -160,6 +167,7 @@ export default function WifiPage() {
   }
 
   const handleSave = async () => {
+    if (writeActionsDisabled) return
     if (!localConfig || !hasChanges) return
 
     setSaving(true)
@@ -198,7 +206,7 @@ export default function WifiPage() {
           <RefreshControl onRefresh={handleRefresh} isLoading={isLoading} />
           <Button
             onClick={handleSave}
-            disabled={saving || !hasChanges}
+            disabled={writeActionsDisabled || saving || !hasChanges}
             className="gradient-bg border-0 text-white h-9"
           >
             <Save className="mr-2 h-4 w-4" />
@@ -213,6 +221,12 @@ export default function WifiPage() {
           <span className="text-sm text-amber-600 dark:text-amber-400">
             You have unsaved changes. Click Save to apply them.
           </span>
+        </div>
+      )}
+
+      {writeActionsDisabled && (
+        <div className="p-3 rounded-xl bg-muted/30 border border-border/50 text-sm text-muted-foreground">
+          Read-only mode: WiFi write actions are disabled.
         </div>
       )}
 
@@ -253,6 +267,7 @@ export default function WifiPage() {
                   <Switch
                     checked={localConfig?.["2.4ghz"]?.isRadioEnabled ?? false}
                     onCheckedChange={() => toggleRadioBand("2.4ghz")}
+                    disabled={writeActionsDisabled}
                   />
                 </div>
                 <div className="flex items-center justify-between p-4 rounded-xl bg-muted/30">
@@ -268,6 +283,7 @@ export default function WifiPage() {
                   <Switch
                     checked={localConfig?.["5.0ghz"]?.isRadioEnabled ?? false}
                     onCheckedChange={() => toggleRadioBand("5.0ghz")}
+                    disabled={writeActionsDisabled}
                   />
                 </div>
                 {localConfig?.["6.0ghz"] && (
@@ -284,6 +300,7 @@ export default function WifiPage() {
                     <Switch
                       checked={localConfig?.["6.0ghz"]?.isRadioEnabled ?? false}
                       onCheckedChange={() => toggleRadioBand("6.0ghz")}
+                      disabled={writeActionsDisabled}
                     />
                   </div>
                 )}
@@ -319,6 +336,7 @@ export default function WifiPage() {
                     onChange={(e) => updateSsidName(e.target.value)}
                     placeholder="Enter network name"
                     className="h-12 rounded-xl bg-muted/30 border-border/50"
+                    disabled={writeActionsDisabled}
                   />
                 </div>
                 <div className="space-y-2">
@@ -331,6 +349,7 @@ export default function WifiPage() {
                       onChange={(e) => updatePassword(e.target.value)}
                       placeholder="Enter password"
                       className="h-12 rounded-xl bg-muted/30 border-border/50 pr-12"
+                      disabled={writeActionsDisabled}
                     />
                     <button
                       type="button"
@@ -351,6 +370,7 @@ export default function WifiPage() {
                   <Switch
                     checked={ssid.isBroadcastEnabled}
                     onCheckedChange={toggleBroadcast}
+                    disabled={writeActionsDisabled}
                   />
                 </div>
               </>
@@ -435,7 +455,7 @@ export default function WifiPage() {
                   <Switch
                     checked={ssid["2.4ghzSsid"]}
                     onCheckedChange={() => toggleSsidBand("2.4ghzSsid")}
-                    disabled={ssid["2.4ghzSsid"] && countEnabledSsidBands() <= 1}
+                    disabled={writeActionsDisabled || (ssid["2.4ghzSsid"] && countEnabledSsidBands() <= 1)}
                   />
                 </div>
                 <div className="flex items-center justify-between p-4 rounded-xl bg-muted/30">
@@ -446,7 +466,7 @@ export default function WifiPage() {
                   <Switch
                     checked={ssid["5.0ghzSsid"]}
                     onCheckedChange={() => toggleSsidBand("5.0ghzSsid")}
-                    disabled={ssid["5.0ghzSsid"] && countEnabledSsidBands() <= 1}
+                    disabled={writeActionsDisabled || (ssid["5.0ghzSsid"] && countEnabledSsidBands() <= 1)}
                   />
                 </div>
                 {ssid["6.0ghzSsid"] !== undefined && (
@@ -458,7 +478,7 @@ export default function WifiPage() {
                     <Switch
                       checked={ssid["6.0ghzSsid"]}
                       onCheckedChange={() => toggleSsidBand("6.0ghzSsid")}
-                      disabled={ssid["6.0ghzSsid"] && countEnabledSsidBands() <= 1}
+                      disabled={writeActionsDisabled || (ssid["6.0ghzSsid"] && countEnabledSsidBands() <= 1)}
                     />
                   </div>
                 )}

@@ -1,7 +1,11 @@
 "use client"
 
 import useSWR from "swr"
-import { POLL_INTERVAL_FAST, POLL_INTERVAL_SLOW } from "@/lib/config"
+import {
+  NEXT_PUBLIC_REVALIDATE_ON_FOCUS,
+  POLL_INTERVAL_FAST,
+  POLL_INTERVAL_SLOW,
+} from "@/lib/config"
 
 // Track if we're already redirecting to prevent multiple redirects
 let isRedirecting = false
@@ -72,10 +76,21 @@ export interface GatewayHealthStatus {
   message?: string
 }
 
+export interface RouterCapabilities {
+  writeActionsEnabled: boolean
+}
+
+export function useRouterCapabilities() {
+  return useSWR<RouterCapabilities>("/api/router/capabilities", fetcher, {
+    revalidateOnFocus: NEXT_PUBLIC_REVALIDATE_ON_FOCUS,
+    shouldRetryOnError: false,
+  })
+}
+
 export function useGatewayHealth() {
   return useSWR<GatewayHealthStatus>("/api/router/health", fetcher, {
     refreshInterval: () => (shouldStopPolling ? 0 : POLL_INTERVAL_FAST),
-    revalidateOnFocus: true,
+    revalidateOnFocus: NEXT_PUBLIC_REVALIDATE_ON_FOCUS,
     shouldRetryOnError: false,
   })
 }
@@ -87,6 +102,7 @@ export function useGatewayInfo() {
 function useGatewayInfoWithInterval(interval: number) {
   return useSWR("/api/router/gateway", fetcher, {
     refreshInterval: () => (shouldStopPolling ? 0 : interval),
+    revalidateOnFocus: NEXT_PUBLIC_REVALIDATE_ON_FOCUS,
     keepPreviousData: true,
     shouldRetryOnError: false,
   })
@@ -99,6 +115,7 @@ export function useGatewayInfoSlow() {
 export function useSignalInfo() {
   return useSWR("/api/router/signal", fetcher, {
     refreshInterval: () => (shouldStopPolling ? 0 : POLL_INTERVAL_FAST),
+    revalidateOnFocus: NEXT_PUBLIC_REVALIDATE_ON_FOCUS,
     keepPreviousData: true,
     shouldRetryOnError: false,
   })
@@ -107,6 +124,7 @@ export function useSignalInfo() {
 export function useCellInfo() {
   return useSWR("/api/router/cell", fetcher, {
     refreshInterval: () => (shouldStopPolling ? 0 : POLL_INTERVAL_FAST),
+    revalidateOnFocus: NEXT_PUBLIC_REVALIDATE_ON_FOCUS,
     keepPreviousData: true,
     shouldRetryOnError: false,
   })
@@ -115,6 +133,7 @@ export function useCellInfo() {
 export function useClients() {
   return useSWR("/api/router/clients", fetcher, {
     refreshInterval: () => (shouldStopPolling ? 0 : POLL_INTERVAL_FAST * 2),
+    revalidateOnFocus: NEXT_PUBLIC_REVALIDATE_ON_FOCUS,
     keepPreviousData: true,
     shouldRetryOnError: false,
   })
@@ -123,6 +142,7 @@ export function useClients() {
 export function useSimInfo() {
   return useSWR("/api/router/sim", fetcher, {
     refreshInterval: () => (shouldStopPolling ? 0 : POLL_INTERVAL_SLOW),
+    revalidateOnFocus: NEXT_PUBLIC_REVALIDATE_ON_FOCUS,
     keepPreviousData: true,
     shouldRetryOnError: false,
   })
@@ -131,6 +151,7 @@ export function useSimInfo() {
 export function useApConfig() {
   return useSWR("/api/router/ap", fetcher, {
     refreshInterval: () => (shouldStopPolling ? 0 : POLL_INTERVAL_SLOW),
+    revalidateOnFocus: NEXT_PUBLIC_REVALIDATE_ON_FOCUS,
     shouldRetryOnError: false,
   })
 }
@@ -142,6 +163,7 @@ export interface VersionInfo {
 export function useVersion() {
   return useSWR<VersionInfo>("/api/router/version", fetcher, {
     refreshInterval: () => (shouldStopPolling ? 0 : POLL_INTERVAL_SLOW),
+    revalidateOnFocus: NEXT_PUBLIC_REVALIDATE_ON_FOCUS,
     shouldRetryOnError: false,
   })
 }
@@ -219,6 +241,7 @@ export interface TelemetryAll {
 export function useTelemetryAll() {
   return useSWR<TelemetryAll>("/api/router/telemetry", fetcher, {
     refreshInterval: () => (shouldStopPolling ? 0 : POLL_INTERVAL_FAST),
+    revalidateOnFocus: NEXT_PUBLIC_REVALIDATE_ON_FOCUS,
     shouldRetryOnError: false,
   })
 }
