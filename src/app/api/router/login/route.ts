@@ -5,6 +5,7 @@ import { loginRouter, normalizeRouterHost, RouterRequestError } from "@/lib/rout
 
 const DEFAULT_ROUTER_IP = "192.168.12.1"
 const INVALID_ROUTER_HOST_FORMAT_ERROR = "Invalid router IP or hostname"
+const INVALID_ROUTER_HOST_FORMAT_RESPONSE = "Invalid router IP or hostname format"
 const ROUTER_HOST_POLICY_ERROR =
   "Router host is not allowed by the current gateway host policy"
 
@@ -54,7 +55,7 @@ export async function POST(request: Request) {
     if (error instanceof RouterRequestError && error.code === "INVALID_ROUTER_HOST") {
       const message =
         error.message === INVALID_ROUTER_HOST_FORMAT_ERROR
-          ? "Invalid router IP or hostname format"
+          ? INVALID_ROUTER_HOST_FORMAT_RESPONSE
           : ROUTER_HOST_POLICY_ERROR
       return NextResponse.json(
         { success: false, error: message },
