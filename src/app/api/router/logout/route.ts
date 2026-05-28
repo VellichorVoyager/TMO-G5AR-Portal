@@ -3,8 +3,10 @@ import { cookies } from "next/headers"
 import { COOKIE_SAMESITE, EFFECTIVE_COOKIE_SECURE } from "@/lib/config-server"
 
 export async function POST() {
+  const cookieStore = await cookies()
+
   // Clear auth cookies by setting them to expire immediately
-  cookies().set("auth_token", "", {
+  cookieStore.set("auth_token", "", {
     httpOnly: true,
     secure: EFFECTIVE_COOKIE_SECURE,
     sameSite: COOKIE_SAMESITE,
@@ -12,7 +14,7 @@ export async function POST() {
     path: "/",
   })
 
-  cookies().set("router_ip", "", {
+  cookieStore.set("router_ip", "", {
     httpOnly: true,
     secure: EFFECTIVE_COOKIE_SECURE,
     sameSite: COOKIE_SAMESITE,

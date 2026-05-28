@@ -2,7 +2,7 @@ import { NextResponse } from "next/server"
 import { getVersion, getRouterHost, RouterRequestError } from "@/lib/router-api"
 
 export async function GET() {
-  const routerHost = getRouterHost()
+  const routerHost = await getRouterHost()
 
   try {
     await getVersion({ routerHost })

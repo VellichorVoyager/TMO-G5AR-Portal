@@ -49,6 +49,7 @@ export async function POST(request: Request) {
     const data = await loginRouter(username, password, normalizedRouterHost)
 
     if (data.auth?.token) {
+      const cookieStore = await cookies()
       const expiration = Number(data.auth.expiration)
       const tokenMaxAge = expiration - Math.floor(Date.now() / 1000)
       if (!Number.isFinite(tokenMaxAge) || tokenMaxAge <= 0) {
@@ -58,7 +59,7 @@ export async function POST(request: Request) {
         )
       }
 
-      cookies().set("auth_token", data.auth.token, {
+      cookieStore.set("auth_token", data.auth.token, {
         httpOnly: true,
         secure: EFFECTIVE_COOKIE_SECURE,
         sameSite: COOKIE_SAMESITE,
@@ -67,7 +68,7 @@ export async function POST(request: Request) {
       })
 
       // Keep the legacy router_ip cookie name for compatibility with existing sessions.
-      cookies().set(ROUTER_HOST_COOKIE, normalizedRouterHost, {
+      cookieStore.set(ROUTER_HOST_COOKIE, normalizedRouterHost, {
         httpOnly: true,
         secure: EFFECTIVE_COOKIE_SECURE,
         sameSite: COOKIE_SAMESITE,
