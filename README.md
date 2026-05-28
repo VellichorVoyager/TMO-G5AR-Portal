@@ -87,8 +87,8 @@ Login with your gateway credentials (found on the label of your device). The def
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `REQUEST_TIMEOUT_MS` | `5000` | Timeout used by gateway proxy requests (`routerFetch`) |
-| `POLL_INTERVAL_FAST` | `5000` | Fast polling interval baseline (server/docs alias) |
-| `POLL_INTERVAL_SLOW` | `30000` | Slow polling interval baseline (server/docs alias) |
+| `POLL_INTERVAL_FAST` | `5000` | Optional alias for fast polling baseline (used as fallback when `NEXT_PUBLIC_POLL_INTERVAL_FAST` is unset at build time) |
+| `POLL_INTERVAL_SLOW` | `30000` | Optional alias for slow polling baseline (used as fallback when `NEXT_PUBLIC_POLL_INTERVAL_SLOW` is unset at build time) |
 | `NEXT_PUBLIC_POLL_INTERVAL_FAST` | `5000` | Fast polling interval used by client SWR hooks |
 | `NEXT_PUBLIC_POLL_INTERVAL_SLOW` | `30000` | Slow polling interval used by client SWR hooks |
 

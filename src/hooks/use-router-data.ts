@@ -7,6 +7,11 @@ import { POLL_INTERVAL_FAST, POLL_INTERVAL_SLOW } from "@/lib/config"
 let isRedirecting = false
 let shouldStopPolling = false
 
+export function resetAuthPollingState() {
+  isRedirecting = false
+  shouldStopPolling = false
+}
+
 async function handleUnauthorized() {
   if (isRedirecting) return
   shouldStopPolling = true
@@ -76,19 +81,19 @@ export function useGatewayHealth() {
 }
 
 export function useGatewayInfo() {
+  return useGatewayInfoWithInterval(POLL_INTERVAL_FAST)
+}
+
+function useGatewayInfoWithInterval(interval: number) {
   return useSWR("/api/router/gateway", fetcher, {
-    refreshInterval: () => (shouldStopPolling ? 0 : POLL_INTERVAL_FAST),
+    refreshInterval: () => (shouldStopPolling ? 0 : interval),
     keepPreviousData: true,
     shouldRetryOnError: false,
   })
 }
 
 export function useGatewayInfoSlow() {
-  return useSWR("/api/router/gateway", fetcher, {
-    refreshInterval: () => (shouldStopPolling ? 0 : POLL_INTERVAL_SLOW),
-    keepPreviousData: true,
-    shouldRetryOnError: false,
-  })
+  return useGatewayInfoWithInterval(POLL_INTERVAL_SLOW)
 }
 
 export function useSignalInfo() {

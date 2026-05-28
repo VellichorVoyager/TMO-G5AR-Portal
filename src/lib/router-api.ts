@@ -2,10 +2,54 @@ import { cookies } from "next/headers"
 import { REQUEST_TIMEOUT_MS } from "@/lib/config"
 
 const DEFAULT_ROUTER_IP = "192.168.12.1"
+const ROUTER_HOST_PATTERN = /^(?:\d{1,3}(?:\.\d{1,3}){3}|[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)*)$/
+const IPV4_PATTERN = /^\d{1,3}(?:\.\d{1,3}){3}$/
+
+export class RouterRequestError extends Error {
+  status?: number
+  code?: string
+
+  constructor(message: string, status?: number, code?: string) {
+    super(message)
+    this.name = "RouterRequestError"
+    this.status = status
+    this.code = code
+  }
+}
+
+function isValidIpv4(value: string): boolean {
+  const parts = value.split(".")
+  return parts.length === 4 && parts.every((part) => {
+    const num = Number(part)
+    return Number.isInteger(num) && num >= 0 && num <= 255
+  })
+}
+
+export function normalizeRouterHost(value: string): string {
+  const trimmed = value.trim()
+  if (!trimmed || !ROUTER_HOST_PATTERN.test(trimmed)) {
+    throw new RouterRequestError("Invalid router IP or hostname format", undefined, "INVALID_ROUTER_HOST")
+  }
+
+  if (IPV4_PATTERN.test(trimmed)) {
+    if (!isValidIpv4(trimmed)) {
+      throw new RouterRequestError("Invalid router IP or hostname format", undefined, "INVALID_ROUTER_HOST")
+    }
+  }
+
+  return trimmed
+}
 
 export function getRouterIp(): string {
   const cookieStore = cookies()
-  return cookieStore.get("router_ip")?.value || DEFAULT_ROUTER_IP
+  const cookieRouterIp = cookieStore.get("router_ip")?.value
+  if (!cookieRouterIp) return DEFAULT_ROUTER_IP
+
+  try {
+    return normalizeRouterHost(cookieRouterIp)
+  } catch {
+    return DEFAULT_ROUTER_IP
+  }
 }
 
 export function getAuthToken(): string {
@@ -34,7 +78,7 @@ export async function routerFetch<T>(
     headers["Authorization"] = `Bearer ${token}`
   }
 
-  const routerIp = explicitRouterIp || getRouterIp()
+  const routerIp = explicitRouterIp ? normalizeRouterHost(explicitRouterIp) : getRouterIp()
   const controller = new AbortController()
   const timeoutId = setTimeout(() => controller.abort(), timeoutMs)
 
@@ -47,9 +91,15 @@ export async function routerFetch<T>(
       signal: controller.signal,
     })
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : "Unknown error"
-    const isTimeout = error instanceof Error && error.name === "AbortError"
-    throw new Error(isTimeout ? `Request timeout after ${timeoutMs}ms` : errorMessage)
+    const isErrorObject = error instanceof Error
+    const errorMessage = isErrorObject
+      ? error.message
+      : "Network request failed with non-Error exception"
+    const isTimeout = isErrorObject && error.name === "AbortError"
+    const message = isTimeout
+      ? `Request timeout after ${timeoutMs}ms`
+      : errorMessage
+    throw new RouterRequestError(message, undefined, isTimeout ? "TIMEOUT" : "NETWORK_ERROR")
   } finally {
     clearTimeout(timeoutId)
   }
@@ -57,10 +107,13 @@ export async function routerFetch<T>(
   if (!response.ok) {
     // Handle authentication errors from the gateway
     if (auth && (response.status === 401 || response.status === 403)) {
-      throw new Error("Not authenticated")
+      throw new RouterRequestError("Not authenticated", response.status)
     }
     const error = await response.json().catch(() => ({}))
-    throw new Error(error.result?.message || `Request failed: ${response.status}`)
+    throw new RouterRequestError(
+      error.result?.message || `Request failed: ${response.status}`,
+      response.status
+    )
   }
 
   // Handle empty responses (common for POST requests)

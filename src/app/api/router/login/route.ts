@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 import { cookies } from "next/headers"
-import { loginRouter } from "@/lib/router-api"
+import { loginRouter, RouterRequestError } from "@/lib/router-api"
 
 const DEFAULT_ROUTER_IP = "192.168.12.1"
 
@@ -41,8 +41,13 @@ export async function POST(request: Request) {
     }
   } catch (error) {
     console.error("Login error:", error)
-    const message = error instanceof Error ? error.message : ""
-    if (message.includes("401") || message.toLowerCase().includes("invalid")) {
+    if (error instanceof RouterRequestError && error.code === "INVALID_ROUTER_HOST") {
+      return NextResponse.json(
+        { success: false, error: "Invalid router IP or hostname format" },
+        { status: 400 }
+      )
+    }
+    if (error instanceof RouterRequestError && error.status === 401) {
       return NextResponse.json(
         { success: false, error: "Invalid credentials" },
         { status: 401 }
