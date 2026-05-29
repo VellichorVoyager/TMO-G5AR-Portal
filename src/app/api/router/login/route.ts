@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { cookies } from "next/headers"
 import { COOKIE_SAMESITE, EFFECTIVE_COOKIE_SECURE } from "@/lib/config-server"
 import { loginRouter, normalizeRouterHost, RouterRequestError } from "@/lib/router-api"
+import { checkRateLimit, recordFailedLogin, clearRateLimit } from "@/lib/rate-limit"
 
 const DEFAULT_ROUTER_HOST = "192.168.12.1"
 const ROUTER_HOST_COOKIE = "router_ip"
@@ -11,6 +12,21 @@ const ROUTER_HOST_POLICY_ERROR =
   "Router host is not allowed by the current gateway host policy"
 
 export async function POST(request: Request) {
+  const ip = request.headers.get("x-forwarded-for") || request.headers.get("x-real-ip")
+  const rateLimit = checkRateLimit(ip)
+
+  if (!rateLimit.success && rateLimit.resetTime) {
+    return NextResponse.json(
+      { success: false, error: "Too many failed login attempts. Please try again later." },
+      { 
+        status: 429,
+        headers: {
+          "Retry-After": Math.ceil((rateLimit.resetTime - Date.now()) / 1000).toString()
+        }
+      }
+    )
+  }
+
   let body: unknown
   try {
     body = await request.json()
@@ -81,8 +97,11 @@ export async function POST(request: Request) {
         path: "/",
       })
 
+      clearRateLimit(ip)
+
       return NextResponse.json({ success: true, routerHost: normalizedRouterHost })
     } else {
+      recordFailedLogin(ip)
       return NextResponse.json(
         { success: false, error: data.result?.message || "Invalid credentials" },
         { status: 401 }
@@ -101,6 +120,7 @@ export async function POST(request: Request) {
       )
     }
     if (error instanceof RouterRequestError && error.status === 401) {
+      recordFailedLogin(ip)
       return NextResponse.json(
         { success: false, error: "Invalid credentials" },
         { status: 401 }

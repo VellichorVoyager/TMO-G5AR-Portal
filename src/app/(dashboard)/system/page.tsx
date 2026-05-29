@@ -13,6 +13,7 @@ import {
   Power,
   Cpu,
   AlertTriangle,
+  Download,
 } from "lucide-react"
 
 export default function SystemPage() {
@@ -236,6 +237,30 @@ export default function SystemPage() {
                 </p>
               </div>
             )}
+          </CardContent>
+        </Card>
+
+        {/* Diagnostics */}
+        <Card className="glass-card border-0 lg:col-span-2">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Download className="h-5 w-5 text-magenta-500" />
+              Export Diagnostics
+            </CardTitle>
+            <CardDescription>
+              Download a sanitized JSON report of the gateway's current state for troubleshooting.
+              Passwords and sensitive identifiers are redacted.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button
+              variant="outline"
+              onClick={() => window.open('/api/router/diagnostics', '_blank')}
+              className="w-full sm:w-auto"
+            >
+              <Download className="mr-2 h-4 w-4" />
+              Download Diagnostics JSON
+            </Button>
           </CardContent>
         </Card>
       </div>

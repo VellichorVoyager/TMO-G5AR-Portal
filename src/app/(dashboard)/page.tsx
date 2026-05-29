@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
 import { SignalBars } from "@/components/signal-bars"
 import { SignalBarChart } from "@/components/signal-chart"
+import { HistoricalSignalCharts } from "@/components/historical-signal-charts"
 import { RefreshControl } from "@/components/refresh-control"
 import { useGatewayInfoSlow, useTelemetryAll } from "@/hooks/use-router-data"
 import { formatUptime } from "@/lib/utils"
@@ -165,12 +166,15 @@ export default function Dashboard() {
                 ))}
               </div>
             ) : signal5g ? (
-              <SignalBarChart
-                rsrp={signal5g.rsrp}
-                rsrq={signal5g.rsrq}
-                sinr={signal5g.sinr}
-                rssi={signal5g.rssi}
-              />
+              <div className="space-y-2">
+                <SignalBarChart
+                  rsrp={signal5g.rsrp}
+                  rsrq={signal5g.rsrq}
+                  sinr={signal5g.sinr}
+                  rssi={signal5g.rssi}
+                />
+                <HistoricalSignalCharts telemetry={telemetry} />
+              </div>
             ) : (
               <div className="py-8 text-center text-muted-foreground">
                 No 5G signal data available

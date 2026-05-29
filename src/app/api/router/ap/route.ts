@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { ENABLE_WRITE_ACTIONS } from "@/lib/config-server"
 import { getApConfig, setApConfig } from "@/lib/router-api"
+import { logAuditAction } from "@/lib/audit-logger"
 
 export async function GET() {
   try {
@@ -29,6 +30,13 @@ export async function POST(request: Request) {
   try {
     const body = await request.json()
     await setApConfig(body)
+    
+    const ip = request.headers.get("x-forwarded-for") || request.headers.get("x-real-ip")
+    await logAuditAction("UPDATE_WIFI_CONFIG", ip, {
+      updatedBands: Object.keys(body).filter(k => k !== 'ssids'),
+      updatedSsids: body.ssids?.map((s: any) => s.ssidName) || []
+    })
+    
     return NextResponse.json({ success: true })
   } catch (error) {
     console.error("AP Config update error:", error)
