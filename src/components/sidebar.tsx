@@ -15,6 +15,8 @@ import {
   Sun,
   PanelLeftClose,
   PanelLeft,
+  MapPin,
+  Gauge,
 } from "lucide-react"
 import { useState, useEffect } from "react"
 
@@ -23,6 +25,8 @@ const navItems = [
   { href: "/devices", label: "Devices", icon: Smartphone },
   { href: "/wifi", label: "WiFi", icon: Wifi },
   { href: "/cell", label: "Cell Info", icon: Radio },
+  { href: "/placement", label: "Signal Finder", icon: MapPin },
+  { href: "/speedtest", label: "Speed Test", icon: Gauge },
   { href: "/system", label: "System", icon: Settings },
 ]
 

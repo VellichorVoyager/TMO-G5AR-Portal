@@ -1,9 +1,11 @@
 "use client"
 
-import { useCallback } from "react"
+import { useCallback, useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
+import { Input } from "@/components/ui/input"
+import { Button } from "@/components/ui/button"
 import {
   Table,
   TableBody,
@@ -15,17 +17,35 @@ import {
 import { useClients } from "@/hooks/use-router-data"
 import { SignalBars } from "@/components/signal-bars"
 import { RefreshControl } from "@/components/refresh-control"
-import { Smartphone, Monitor, Wifi, Cable } from "lucide-react"
+import { Smartphone, Monitor, Wifi, Cable, Pencil, Check, X } from "lucide-react"
 import { Client } from "@/lib/router-api"
+import { useDeviceAliases } from "@/hooks/use-device-aliases"
 
 type ClientWithType = Client & { type: "wifi" | "ethernet" | "2.4ghz" | "5.0ghz" }
 
 export default function DevicesPage() {
   const { data, isLoading, mutate } = useClients()
+  const { getAlias, setAlias } = useDeviceAliases()
+  const [editingMac, setEditingMac] = useState<string | null>(null)
+  const [editValue, setEditValue] = useState("")
 
   const handleRefresh = useCallback(() => {
     mutate()
   }, [mutate])
+
+  const startEditing = (mac: string, currentName: string) => {
+    setEditingMac(mac)
+    setEditValue(getAlias(mac) || currentName || "")
+  }
+
+  const saveAlias = (mac: string) => {
+    setAlias(mac, editValue)
+    setEditingMac(null)
+  }
+
+  const cancelEditing = () => {
+    setEditingMac(null)
+  }
 
   const allClients: ClientWithType[] = data?.clients
     ? [
@@ -177,13 +197,41 @@ export default function DevicesPage() {
                   {uniqueClients.map((client) => (
                     <TableRow key={client.mac} className="hover:bg-muted/20">
                       <TableCell>
-                        <div className="flex items-center gap-3">
-                          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-muted/50">
+                        <div className="flex items-center gap-3 group">
+                          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-muted/50 flex-shrink-0">
                             {getTypeIcon(client.type)}
                           </div>
-                          <div className="font-medium">
-                            {client.name || "Unknown Device"}
-                          </div>
+                          {editingMac === client.mac ? (
+                            <div className="flex items-center gap-2">
+                              <Input 
+                                value={editValue} 
+                                onChange={(e) => setEditValue(e.target.value)}
+                                className="h-8 text-sm w-40"
+                                autoFocus
+                                onKeyDown={(e) => e.key === 'Enter' && saveAlias(client.mac)}
+                              />
+                              <Button size="icon" variant="ghost" className="h-8 w-8 text-green-500" onClick={() => saveAlias(client.mac)}>
+                                <Check className="h-4 w-4" />
+                              </Button>
+                              <Button size="icon" variant="ghost" className="h-8 w-8 text-red-500" onClick={cancelEditing}>
+                                <X className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          ) : (
+                            <div className="flex items-center gap-2">
+                              <div className="font-medium">
+                                {getAlias(client.mac) || client.name || "Unknown Device"}
+                              </div>
+                              <Button 
+                                size="icon" 
+                                variant="ghost" 
+                                className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity" 
+                                onClick={() => startEditing(client.mac, client.name || "")}
+                              >
+                                <Pencil className="h-3 w-3" />
+                              </Button>
+                            </div>
+                          )}
                         </div>
                       </TableCell>
                       <TableCell>
