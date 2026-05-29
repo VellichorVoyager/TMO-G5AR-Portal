@@ -11,6 +11,7 @@ updates:
     open-pull-requests-limit: 5
     labels:
       - "dependencies"
+      - "security"
     commit-message:
       prefix: "deps"
       include: "scope"
