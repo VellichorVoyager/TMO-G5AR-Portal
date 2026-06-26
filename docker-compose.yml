@@ -1,0 +1,29 @@
+# LAN-only deployment for the TMO-G5AR Portal.
+#
+# Runs the portal on an always-on host on your home network. Reachable from any
+# device on the LAN at  http://<this-host-LAN-IP>:3000  — and NOT from the
+# internet (no port is forwarded on your gateway, and T-Mobile Home Internet is
+# behind CGNAT anyway). See docs/shodan-exposure.md / README "Safe Deployment".
+#
+# Config (Shodan key, gateway allowlist, cookie posture) is read from .env.local,
+# which is gitignored — secrets never enter the image or git.
+#
+# Usage:
+#   docker compose up -d --build      # build + start in the background
+#   docker compose logs -f            # follow logs
+#   docker compose down               # stop
+#
+# Portable across macOS / Windows / Linux: the published port reaches the LAN,
+# and the container still has outbound access to the gateway at 192.168.12.1.
+
+services:
+  g5ar-portal:
+    build: .
+    image: g5ar-portal
+    # Binds 3000 on the host (all interfaces) so other LAN devices can reach it.
+    # To restrict to this machine only, change to "127.0.0.1:3000:3000".
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env.local
+    restart: unless-stopped
