@@ -75,6 +75,19 @@ const sourceLabel: Record<string, string> = {
   detected: "detected from this server's connection",
 }
 
+// Shodan's recommended Monitor triggers. new_service fires on any newly-opened
+// port; vulnerable on CVEs — together these cover "all vulnerable access ports".
+const RECOMMENDED_TRIGGERS = [
+  "new_service",
+  "vulnerable",
+  "malware",
+  "open_database",
+  "ssl_expired",
+  "iot",
+  "industrial_control_system",
+  "internet_scanner",
+]
+
 export default function ExposurePage() {
   const { data: capabilities } = useRouterCapabilities()
   const [pendingIp, setPendingIp] = useState("")
@@ -228,6 +241,43 @@ export default function ExposurePage() {
       if (!res.ok) { setAlertMsg(json.error ?? "Toggle failed."); return }
       await mutateAlerts()
     } catch { setAlertMsg("Toggle failed.") } finally { setTriggerBusy(null) }
+  }
+
+  // Turn on Shodan's recommended triggers in one click. new_service catches ANY
+  // newly-opened port; vulnerable catches CVEs — together they monitor all
+  // vulnerable/access ports on the public IP. Only enables triggers that exist
+  // on the account and aren't already on.
+  const enableRecommended = async (alert: ShodanAlert) => {
+    const available = (triggersData?.triggers ?? []).map((t) => t.name)
+    const toEnable = RECOMMENDED_TRIGGERS.filter(
+      (name) => available.includes(name) && !alert.triggers.includes(name)
+    )
+    if (toEnable.length === 0) {
+      setAlertMsg("All recommended triggers are already enabled.")
+      return
+    }
+    setAlertMsg(`Enabling ${toEnable.length} recommended trigger(s)…`)
+    setTriggerBusy("__recommended__")
+    try {
+      for (const trigger of toEnable) {
+        const res = await fetch("/api/router/exposure/alerts/triggers", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ alertId: alert.id, trigger, enabled: true }),
+        })
+        if (!res.ok) {
+          const json = await res.json()
+          setAlertMsg(json.error ?? `Failed enabling ${trigger}.`)
+          break
+        }
+      }
+      await mutateAlerts()
+      setAlertMsg("Recommended triggers enabled. You'll get email alerts on changes.")
+    } catch {
+      setAlertMsg("Failed to enable recommended triggers.")
+    } finally {
+      setTriggerBusy(null)
+    }
   }
 
   const ports = data?.data?.ports ?? []
@@ -607,8 +657,21 @@ export default function ExposurePage() {
                         {/* Trigger toggles */}
                         {triggersData?.triggers && triggersData.triggers.length > 0 && (
                           <div className="space-y-1.5">
-                            <div className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                              Triggers
+                            <div className="flex items-center justify-between gap-2">
+                              <div className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                                Triggers
+                              </div>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="h-7 text-xs"
+                                onClick={() => enableRecommended(alert)}
+                                disabled={triggerBusy === "__recommended__"}
+                                title="Enable Shodan's recommended triggers (new ports, vulns, malware, etc.)"
+                              >
+                                <Bell className="h-3 w-3 mr-1.5" />
+                                Enable recommended
+                              </Button>
                             </div>
                             <div className="flex flex-wrap gap-2">
                               {triggersData.triggers.map((t) => {
