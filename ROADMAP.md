@@ -48,3 +48,32 @@ See [docs/shodan-exposure.md](docs/shodan-exposure.md) for the full design.
 - [x] Phase 1: Exposure page using free, keyless Shodan InternetDB + CGNAT handling (no credits).
 - [x] Phase 2: Optional `SHODAN_API_KEY` host lookup and audit-logged on-demand scans behind `ENABLE_SHODAN_SCAN`.
 - [x] Phase 3: Shodan Monitor network alert management — create/delete alerts, enable/disable triggers (new ports, vulns, etc.) per-alert.
+
+### Future Shodan extensions (from shodan-python)
+
+- Exploit search API — surface known exploits for products/CVEs found during exposure checks.
+- DNS DB — domain/subdomain enumeration and DNS lookups for owned domains.
+- Streaming firehose — real-time Monitor alert events pushed into the portal (vs. polling).
+- Bulk host lookups and Shodan-side email notification management.
+
+## Security & Observability Platform (exploratory)
+
+Longer-term direction: evolve the portal from gateway admin into a network
+**asset-discovery and baseline-monitoring** tool. Full design notes (service-inventory
+data model, port baseline by category, and monitoring-beyond-ports ideas) live in
+[docs/security-monitoring-roadmap.md](docs/security-monitoring-roadmap.md).
+
+Highlights:
+
+- **Service-inventory model** — track each observed service (device, interface, port,
+  scope, first/last seen, Expected/New/Changed/Exposed state, risk) over time instead
+  of listing raw ports.
+- **Local collector** — optional, off-by-default LAN scanner (nmap/arp/mDNS) feeding a
+  local store the portal reads; required because the gateway API and Shodan can't see
+  LAN services.
+- **Baseline categories** — critical remote access, Apple ecosystem, Quest/Android,
+  Windows, dev servers, databases, Docker/K8s, VPN/overlay, web, mail, DNS, IoT,
+  local AI/LLM, monitoring stack.
+- **Beyond ports** — public IP change tracking, DNS posture (SPF/DKIM/DMARC), TLS cert
+  expiry, UPnP/NAT-PMP detection, new-listener alerts, mDNS/Bonjour inventory, MAC
+  allowlist + ARP change detection, VPN/tunnel state, threat-intel enrichment.
