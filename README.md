@@ -100,6 +100,10 @@ Login with your gateway credentials (found on the label of your device). The def
 | `COOKIE_SECURE` | `false` | Sets `Secure` flag on auth/router cookies |
 | `COOKIE_SAMESITE` | `strict` | Sets `SameSite` on auth/router cookies (`strict`, `lax`, `none`); `none` forces `Secure=true` |
 | `ENABLE_WRITE_ACTIONS` | `false` | Blocks mutation API routes (`/api/router/reboot`, `/api/router/ap`) when disabled |
+| `ENABLE_EXPOSURE_CHECKS` | `true` | Enables the **Exposure** page and `/api/router/exposure` (free, keyless Shodan InternetDB lookups of your public IP) |
+| `EXPOSURE_PUBLIC_IP` | _(empty)_ | Optional manual override of the detected public/WAN IP for exposure checks; server-side only |
+| `SHODAN_API_KEY` | _(empty)_ | Shodan API key enabling **Deep lookup** (`/api/router/exposure/host`, 1 query credit) on the Exposure page; server-side only, never sent to the browser. Put real keys in `.env.local`, not `.env` |
+| `ENABLE_SHODAN_SCAN` | `false` | Gates credit-spending on-demand Shodan scans (`/api/router/exposure/scan`); scans are audit-logged |
 
 Gateway access is now safe-by-default: only `192.168.12.1` is accepted unless you explicitly configure `GATEWAY_ALLOWED_HOSTS` and/or `ALLOW_CUSTOM_GATEWAY_HOST`.
 

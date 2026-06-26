@@ -25,6 +25,9 @@ yarn-error.log*
 # Local env files
 .env*.local
 
+# Audit log (contains local IPs / scan targets)
+audit.log
+
 # Vercel
 .vercel
 

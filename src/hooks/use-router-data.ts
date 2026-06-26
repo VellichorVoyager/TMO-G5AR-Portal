@@ -78,11 +78,43 @@ export interface GatewayHealthStatus {
 
 export interface RouterCapabilities {
   writeActionsEnabled: boolean
+  exposureChecksEnabled?: boolean
+  shodanKeyConfigured?: boolean
+  shodanScanEnabled?: boolean
 }
 
 export function useRouterCapabilities() {
   return useSWR<RouterCapabilities>("/api/router/capabilities", fetcher, {
     revalidateOnFocus: NEXT_PUBLIC_REVALIDATE_ON_FOCUS,
+    shouldRetryOnError: false,
+  })
+}
+
+export interface ExposureResult {
+  ip: string | null
+  source: "manual" | "override" | "detected" | null
+  behindCgnat: boolean
+  checked: boolean
+  found: boolean
+  data: {
+    ip: string
+    ports: number[]
+    cpes: string[]
+    hostnames: string[]
+    tags: string[]
+    vulns: string[]
+  } | null
+  message: string
+}
+
+// On-demand only: no polling. The page triggers (re)checks via SWR's mutate.
+export function useExposure(manualIp?: string) {
+  const key = manualIp
+    ? `/api/router/exposure?ip=${encodeURIComponent(manualIp)}`
+    : "/api/router/exposure"
+  return useSWR<ExposureResult>(key, fetcher, {
+    revalidateOnFocus: false,
+    revalidateIfStale: false,
     shouldRetryOnError: false,
   })
 }

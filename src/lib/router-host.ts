@@ -71,6 +71,41 @@ function isBlockedIpv4(ip: string): boolean {
   return isLoopbackIpv4(ip) || isLinkLocalIpv4(ip) || isMetadataIpv4(ip) || isZeroIpv4(ip)
 }
 
+// 100.64.0.0/10 — carrier-grade NAT shared address space (RFC 6598).
+// T-Mobile Home Internet frequently sits behind CGNAT, so the gateway often has
+// no directly reachable public IP. This is treated as a first-class result by the
+// exposure check rather than an error.
+export function isCgnatIpv4(value: string): boolean {
+  if (!isValidIpv4(value)) return false
+  const [a, b] = getIpv4Octets(value)
+  return a === 100 && b >= 64 && b <= 127
+}
+
+// True only for globally routable IPv4 addresses — the inverse of the gateway-host
+// guards above. Used by the exposure check, which must refuse to query Shodan for
+// anything that isn't a genuine public IP (private, loopback, link-local,
+// metadata, CGNAT, multicast, documentation, and reserved ranges all return false).
+export function isPublicIPv4(value: string): boolean {
+  if (!isValidIpv4(value)) return false
+  const [a, b, c] = getIpv4Octets(value)
+
+  if (a === 0) return false // 0.0.0.0/8 "this network"
+  if (a === 10) return false // 10/8 private
+  if (a === 127) return false // 127/8 loopback
+  if (a === 100 && b >= 64 && b <= 127) return false // 100.64/10 CGNAT
+  if (a === 169 && b === 254) return false // 169.254/16 link-local
+  if (a === 172 && b >= 16 && b <= 31) return false // 172.16/12 private
+  if (a === 192 && b === 168) return false // 192.168/16 private
+  if (a === 192 && b === 0 && c === 0) return false // 192.0.0/24 IETF protocol
+  if (a === 192 && b === 0 && c === 2) return false // 192.0.2/24 TEST-NET-1
+  if (a === 198 && (b === 18 || b === 19)) return false // 198.18/15 benchmarking
+  if (a === 198 && b === 51 && c === 100) return false // 198.51.100/24 TEST-NET-2
+  if (a === 203 && b === 0 && c === 113) return false // 203.0.113/24 TEST-NET-3
+  if (a >= 224) return false // 224/4 multicast, 240/4 reserved, 255.255.255.255 broadcast
+
+  return true
+}
+
 export function parseGatewayAllowedHosts(value: string | undefined): Set<string> {
   if (!value) return new Set()
 

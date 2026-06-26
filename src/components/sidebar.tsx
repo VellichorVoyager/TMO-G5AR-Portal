@@ -17,6 +17,7 @@ import {
   PanelLeft,
   MapPin,
   Gauge,
+  ShieldAlert,
 } from "lucide-react"
 import { useState, useEffect } from "react"
 
@@ -27,6 +28,7 @@ const navItems = [
   { href: "/cell", label: "Cell Info", icon: Radio },
   { href: "/placement", label: "Signal Finder", icon: MapPin },
   { href: "/speedtest", label: "Speed Test", icon: Gauge },
+  { href: "/exposure", label: "Exposure", icon: ShieldAlert },
   { href: "/system", label: "System", icon: Settings },
 ]
 
