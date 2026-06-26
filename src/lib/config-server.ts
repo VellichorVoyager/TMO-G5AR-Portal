@@ -33,3 +33,7 @@ export const EXPOSURE_PUBLIC_IP = process.env.EXPOSURE_PUBLIC_IP?.trim() || unde
 export const SHODAN_API_KEY = process.env.SHODAN_API_KEY?.trim() || undefined
 // Phase 2+ only — gates credit-spending on-demand scans, off by default.
 export const ENABLE_SHODAN_SCAN = toBoolean(process.env.ENABLE_SHODAN_SCAN, false)
+// Phase 3 — Shodan Monitor network alerts (plan-gated on Shodan's side).
+// Enables the Monitor card on the Exposure page: create/delete/view alerts and
+// manage triggers for the detected public IP.
+export const ENABLE_SHODAN_MONITOR = toBoolean(process.env.ENABLE_SHODAN_MONITOR, false)

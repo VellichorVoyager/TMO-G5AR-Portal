@@ -366,3 +366,152 @@ export async function shodanScanStatus(id: string): Promise<ShodanScanStatus> {
   const raw = (await res.json()) as { id?: string; status?: string }
   return { id: raw.id ?? id, status: raw.status ?? "UNKNOWN" }
 }
+
+// ---------------------------------------------------------------------------
+// Phase 3 — Shodan Monitor network alerts (private firehose).
+// Lets the portal create and manage persistent monitoring alerts for a public
+// IP/CIDR. Shodan continuously rescans and fires the enabled triggers when
+// something changes (new port, new vuln, etc.). Plan-gated on Shodan's side
+// (requires Monitor subscription or Academic Plus).
+// ---------------------------------------------------------------------------
+
+export interface ShodanAlertTrigger {
+  name: string
+  description: string
+  rule?: string
+}
+
+export interface ShodanAlert {
+  id: string
+  name: string
+  /** ISO 8601 creation timestamp */
+  created: string
+  /** 0 = never expires */
+  expires: number
+  /** Number of IPs covered */
+  size: number
+  filters: { ip: string[] }
+  /** Trigger names currently enabled on this alert */
+  triggers: string[]
+  notifications?: string[]
+}
+
+/** List all Monitor alerts on the account. */
+export async function shodanListAlerts(): Promise<ShodanAlert[]> {
+  const key = requireKey()
+  const res = await fetchWithTimeout(`${SHODAN_API_BASE}/shodan/alert/info?key=${encodeURIComponent(key)}`)
+  if (res.status === 404) return []
+  if (!res.ok) throw await shodanError(res)
+  const raw = (await res.json()) as Array<{
+    id?: string
+    name?: string
+    created?: string
+    expires?: number
+    size?: number
+    filters?: { ip?: string[] }
+    triggers?: Record<string, unknown> | string[]
+    notifications?: string[]
+  }>
+  if (!Array.isArray(raw)) return []
+  return raw.map((a) => ({
+    id: a.id ?? "",
+    name: a.name ?? "",
+    created: a.created ?? "",
+    expires: a.expires ?? 0,
+    size: a.size ?? 0,
+    filters: { ip: a.filters?.ip ?? [] },
+    triggers: Array.isArray(a.triggers)
+      ? a.triggers
+      : a.triggers
+        ? Object.keys(a.triggers)
+        : [],
+    notifications: a.notifications,
+  }))
+}
+
+/**
+ * Create a Monitor alert for a single public IP (/32 CIDR).
+ * The alert is permanent (expires=0) and starts with no triggers enabled.
+ */
+export async function shodanCreateAlert(name: string, ip: string): Promise<ShodanAlert> {
+  const key = requireKey()
+  if (!isPublicIPv4(ip)) {
+    throw new ShodanApiError("Monitor alerts are only valid for public IPs", 400)
+  }
+  const res = await fetchWithTimeout(
+    `${SHODAN_API_BASE}/shodan/alert?key=${encodeURIComponent(key)}`,
+    REQUEST_TIMEOUT_MS,
+    {
+      method: "POST",
+      body: JSON.stringify({ name, filters: { ip: [`${ip}/32`] }, expires: 0 }),
+    }
+  )
+  if (!res.ok) throw await shodanError(res)
+  const raw = (await res.json()) as {
+    id?: string
+    name?: string
+    created?: string
+    expires?: number
+    size?: number
+    filters?: { ip?: string[] }
+    triggers?: Record<string, unknown> | string[]
+  }
+  return {
+    id: raw.id ?? "",
+    name: raw.name ?? name,
+    created: raw.created ?? new Date().toISOString(),
+    expires: raw.expires ?? 0,
+    size: raw.size ?? 1,
+    filters: { ip: raw.filters?.ip ?? [`${ip}/32`] },
+    triggers: Array.isArray(raw.triggers) ? raw.triggers : raw.triggers ? Object.keys(raw.triggers) : [],
+  }
+}
+
+/** Delete a Monitor alert by ID. */
+export async function shodanDeleteAlert(id: string): Promise<void> {
+  const key = requireKey()
+  const res = await fetchWithTimeout(
+    `${SHODAN_API_BASE}/shodan/alert/${encodeURIComponent(id)}?key=${encodeURIComponent(key)}`,
+    REQUEST_TIMEOUT_MS,
+    { method: "DELETE" }
+  )
+  if (!res.ok) throw await shodanError(res)
+}
+
+/** List all available trigger types with descriptions. */
+export async function shodanListTriggers(): Promise<ShodanAlertTrigger[]> {
+  const key = requireKey()
+  const res = await fetchWithTimeout(
+    `${SHODAN_API_BASE}/shodan/alert/triggers?key=${encodeURIComponent(key)}`
+  )
+  if (!res.ok) throw await shodanError(res)
+  const raw = (await res.json()) as Array<{
+    name?: string
+    description?: string
+    rule?: string
+  }>
+  if (!Array.isArray(raw)) return []
+  return raw.map((t) => ({ name: t.name ?? "", description: t.description ?? "", rule: t.rule }))
+}
+
+/** Enable a trigger on an existing alert. */
+export async function shodanEnableTrigger(alertId: string, trigger: string): Promise<void> {
+  const key = requireKey()
+  const res = await fetchWithTimeout(
+    `${SHODAN_API_BASE}/shodan/alert/${encodeURIComponent(alertId)}/trigger/${encodeURIComponent(trigger)}?key=${encodeURIComponent(key)}`,
+    REQUEST_TIMEOUT_MS,
+    { method: "PUT" }
+  )
+  if (!res.ok) throw await shodanError(res)
+}
+
+/** Disable a trigger on an existing alert. */
+export async function shodanDisableTrigger(alertId: string, trigger: string): Promise<void> {
+  const key = requireKey()
+  const res = await fetchWithTimeout(
+    `${SHODAN_API_BASE}/shodan/alert/${encodeURIComponent(alertId)}/trigger/${encodeURIComponent(trigger)}?key=${encodeURIComponent(key)}`,
+    REQUEST_TIMEOUT_MS,
+    { method: "DELETE" }
+  )
+  if (!res.ok) throw await shodanError(res)
+}

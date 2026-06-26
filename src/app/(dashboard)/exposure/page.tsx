@@ -15,8 +15,18 @@ import {
   Globe,
   Search,
   Radar,
+  Bell,
+  BellOff,
+  Trash2,
+  Plus,
 } from "lucide-react"
-import { useExposure, useRouterCapabilities } from "@/hooks/use-router-data"
+import {
+  useExposure,
+  useRouterCapabilities,
+  useShodanAlerts,
+  useShodanTriggers,
+} from "@/hooks/use-router-data"
+import type { ShodanAlert, ShodanAlertTrigger } from "@/hooks/use-router-data"
 
 interface ShodanService {
   port: number
@@ -74,6 +84,17 @@ export default function ExposurePage() {
   const exposureDisabled = capabilities?.exposureChecksEnabled === false
   const keyConfigured = capabilities?.shodanKeyConfigured === true
   const scanEnabled = capabilities?.shodanScanEnabled === true
+  const monitorEnabled = capabilities?.shodanMonitorEnabled === true
+
+  // Phase 3 — Monitor alerts (fetched on-demand when section is visible)
+  const {
+    data: alertsData,
+    isLoading: alertsLoading,
+    mutate: mutateAlerts,
+  } = useShodanAlerts()
+  const { data: triggersData } = useShodanTriggers()
+  const [alertMsg, setAlertMsg] = useState<string | null>(null)
+  const [triggerBusy, setTriggerBusy] = useState<string | null>(null) // trigger name being toggled
 
   // Deep inspection (keyed Shodan API) state — on-demand, spends credits.
   const [host, setHost] = useState<ShodanHostResult | null>(null)
@@ -164,6 +185,49 @@ export default function ExposurePage() {
     } finally {
       setScanBusy(false)
     }
+  }
+
+  const createAlert = async () => {
+    if (!targetIp) return
+    setAlertMsg("Creating alert…")
+    try {
+      const res = await fetch("/api/router/exposure/alerts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ip: targetIp }),
+      })
+      const json = await res.json()
+      if (!res.ok) { setAlertMsg(json.error ?? "Failed to create alert."); return }
+      setAlertMsg(`Alert created (id: ${json.alert.id}). Enable triggers below.`)
+      await mutateAlerts()
+    } catch { setAlertMsg("Failed to create alert.") }
+  }
+
+  const deleteAlert = async (id: string) => {
+    setAlertMsg("Deleting alert…")
+    try {
+      const res = await fetch(`/api/router/exposure/alerts?id=${encodeURIComponent(id)}`, {
+        method: "DELETE",
+      })
+      if (!res.ok) { const j = await res.json(); setAlertMsg(j.error ?? "Delete failed."); return }
+      setAlertMsg("Alert deleted.")
+      await mutateAlerts()
+    } catch { setAlertMsg("Delete failed.") }
+  }
+
+  const toggleTrigger = async (alert: ShodanAlert, trigger: ShodanAlertTrigger) => {
+    const currently = alert.triggers.includes(trigger.name)
+    setTriggerBusy(trigger.name)
+    try {
+      const res = await fetch("/api/router/exposure/alerts/triggers", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ alertId: alert.id, trigger: trigger.name, enabled: !currently }),
+      })
+      const json = await res.json()
+      if (!res.ok) { setAlertMsg(json.error ?? "Toggle failed."); return }
+      await mutateAlerts()
+    } catch { setAlertMsg("Toggle failed.") } finally { setTriggerBusy(null) }
   }
 
   const ports = data?.data?.ports ?? []
@@ -462,6 +526,127 @@ export default function ExposurePage() {
                     )}
                   </div>
                 )}
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Phase 3 — Shodan Monitor */}
+          {monitorEnabled && keyConfigured && (
+            <Card className="glass-card border-0">
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Bell className="h-5 w-5 text-purple-500" />
+                  Monitor alerts
+                  <Badge variant="secondary" className="text-xs">Shodan Monitor</Badge>
+                </CardTitle>
+                <CardDescription>
+                  Persistent alerts that notify you when Shodan observes new ports,
+                  vulnerabilities, or other changes on your public IP.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+
+                {/* Create alert for current target */}
+                {targetIp && (
+                  <div className="flex items-center gap-3">
+                    <Button onClick={createAlert} variant="outline" size="sm">
+                      <Plus className="h-4 w-4 mr-2" />
+                      Monitor {targetIp}
+                    </Button>
+                    <span className="text-xs text-muted-foreground">
+                      Creates a /32 alert on your Shodan account for this IP.
+                    </span>
+                  </div>
+                )}
+
+                {alertMsg && (
+                  <p className="text-sm text-muted-foreground">{alertMsg}</p>
+                )}
+
+                {/* Alert list */}
+                {alertsLoading ? (
+                  <div className="space-y-2">
+                    <Skeleton className="h-5 w-64" />
+                    <Skeleton className="h-5 w-48" />
+                  </div>
+                ) : alertsData?.alerts && alertsData.alerts.length > 0 ? (
+                  <div className="space-y-4">
+                    {alertsData.alerts.map((alert) => (
+                      <div
+                        key={alert.id}
+                        className="rounded-md border border-border/50 p-4 space-y-3"
+                      >
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="space-y-0.5">
+                            <div className="font-medium text-sm">{alert.name}</div>
+                            <div className="flex flex-wrap gap-1.5 text-xs text-muted-foreground">
+                              {alert.filters.ip.map((cidr) => (
+                                <span key={cidr} className="font-mono">{cidr}</span>
+                              ))}
+                              <span>·</span>
+                              <span>created {new Date(alert.created).toLocaleDateString()}</span>
+                              {alert.expires > 0 && (
+                                <>
+                                  <span>·</span>
+                                  <span>expires {new Date(alert.expires * 1000).toLocaleDateString()}</span>
+                                </>
+                              )}
+                            </div>
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-destructive hover:text-destructive hover:bg-destructive/10 flex-shrink-0"
+                            onClick={() => deleteAlert(alert.id)}
+                            title="Delete alert"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+
+                        {/* Trigger toggles */}
+                        {triggersData?.triggers && triggersData.triggers.length > 0 && (
+                          <div className="space-y-1.5">
+                            <div className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                              Triggers
+                            </div>
+                            <div className="flex flex-wrap gap-2">
+                              {triggersData.triggers.map((t) => {
+                                const active = alert.triggers.includes(t.name)
+                                const busy = triggerBusy === t.name
+                                return (
+                                  <button
+                                    key={t.name}
+                                    onClick={() => toggleTrigger(alert, t)}
+                                    disabled={busy}
+                                    title={t.description}
+                                    className="flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium transition-colors disabled:opacity-50"
+                                    style={{
+                                      borderColor: active ? "rgb(168 85 247 / 0.6)" : undefined,
+                                      backgroundColor: active ? "rgb(168 85 247 / 0.1)" : undefined,
+                                      color: active ? "rgb(168 85 247)" : undefined,
+                                    }}
+                                  >
+                                    {active ? (
+                                      <Bell className="h-3 w-3" />
+                                    ) : (
+                                      <BellOff className="h-3 w-3 opacity-50" />
+                                    )}
+                                    {t.name}
+                                  </button>
+                                )
+                              })}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                ) : alertsData ? (
+                  <p className="text-sm text-muted-foreground">
+                    No Monitor alerts yet. Click &ldquo;Monitor&rdquo; above to create one for this IP.
+                  </p>
+                ) : null}
               </CardContent>
             </Card>
           )}

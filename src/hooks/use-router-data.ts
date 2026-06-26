@@ -81,6 +81,7 @@ export interface RouterCapabilities {
   exposureChecksEnabled?: boolean
   shodanKeyConfigured?: boolean
   shodanScanEnabled?: boolean
+  shodanMonitorEnabled?: boolean
 }
 
 export function useRouterCapabilities() {
@@ -276,4 +277,48 @@ export function useTelemetryAll() {
     revalidateOnFocus: NEXT_PUBLIC_REVALIDATE_ON_FOCUS,
     shouldRetryOnError: false,
   })
+}
+
+// ---------------------------------------------------------------------------
+// Phase 3 — Shodan Monitor hooks
+// ---------------------------------------------------------------------------
+
+export interface ShodanAlertTrigger {
+  name: string
+  description: string
+  rule?: string
+}
+
+export interface ShodanAlert {
+  id: string
+  name: string
+  created: string
+  expires: number
+  size: number
+  filters: { ip: string[] }
+  triggers: string[]
+  notifications?: string[]
+}
+
+/** Fetch all Monitor alerts for the account. On-demand (no polling). */
+export function useShodanAlerts() {
+  return useSWR<{ alerts: ShodanAlert[] }>("/api/router/exposure/alerts", fetcher, {
+    revalidateOnFocus: false,
+    revalidateIfStale: false,
+    shouldRetryOnError: false,
+  })
+}
+
+/** Fetch available trigger types. Effectively static — revalidate infrequently. */
+export function useShodanTriggers() {
+  return useSWR<{ triggers: ShodanAlertTrigger[] }>(
+    "/api/router/exposure/alerts/triggers",
+    fetcher,
+    {
+      revalidateOnFocus: false,
+      revalidateIfStale: false,
+      shouldRetryOnError: false,
+      dedupingInterval: 5 * 60 * 1000,
+    }
+  )
 }

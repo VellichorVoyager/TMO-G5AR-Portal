@@ -22,8 +22,9 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-# Local env files
+# Local env files — store all local config here, never in .env
 .env*.local
+.env
 
 # Audit log (contains local IPs / scan targets)
 audit.log

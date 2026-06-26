@@ -47,4 +47,4 @@ See [docs/shodan-exposure.md](docs/shodan-exposure.md) for the full design.
 
 - [x] Phase 1: Exposure page using free, keyless Shodan InternetDB + CGNAT handling (no credits).
 - [x] Phase 2: Optional `SHODAN_API_KEY` host lookup and audit-logged on-demand scans behind `ENABLE_SHODAN_SCAN`.
-- [ ] Phase 3: Shodan Monitor network alert for the WAN IP, surfaced in the portal.
+- [x] Phase 3: Shodan Monitor network alert management — create/delete alerts, enable/disable triggers (new ports, vulns, etc.) per-alert.

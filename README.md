@@ -104,6 +104,7 @@ Login with your gateway credentials (found on the label of your device). The def
 | `EXPOSURE_PUBLIC_IP` | _(empty)_ | Optional manual override of the detected public/WAN IP for exposure checks; server-side only |
 | `SHODAN_API_KEY` | _(empty)_ | Shodan API key enabling **Deep lookup** (`/api/router/exposure/host`, 1 query credit) on the Exposure page; server-side only, never sent to the browser. Put real keys in `.env.local`, not `.env` |
 | `ENABLE_SHODAN_SCAN` | `false` | Gates credit-spending on-demand Shodan scans (`/api/router/exposure/scan`); scans are audit-logged |
+| `ENABLE_SHODAN_MONITOR` | `false` | Enables Shodan Monitor alert management on the Exposure page — create persistent alerts and configure triggers (new ports, vulns, etc.) for your public IP; requires Monitor plan or Academic Plus |
 
 Gateway access is now safe-by-default: only `192.168.12.1` is accepted unless you explicitly configure `GATEWAY_ALLOWED_HOSTS` and/or `ALLOW_CUSTOM_GATEWAY_HOST`.
 
