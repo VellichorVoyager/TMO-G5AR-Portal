@@ -77,7 +77,7 @@ export default function PlacementPage() {
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Placement Helper</h1>
         <p className="text-muted-foreground mt-2">
-          Use this tool while moving the gateway around your house. Turn on the audio beep so you don't have to look at the screen. The faster and higher the beep, the better the signal.
+          Use this tool while moving the gateway around your house. Turn on the audio beep so you don&apos;t have to look at the screen. The faster and higher the beep, the better the signal.
         </p>
       </div>
 

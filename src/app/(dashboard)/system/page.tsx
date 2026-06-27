@@ -248,7 +248,7 @@ export default function SystemPage() {
               Export Diagnostics
             </CardTitle>
             <CardDescription>
-              Download a sanitized JSON report of the gateway's current state for troubleshooting.
+              Download a sanitized JSON report of the gateway&apos;s current state for troubleshooting.
               Passwords and sensitive identifiers are redacted.
             </CardDescription>
           </CardHeader>
