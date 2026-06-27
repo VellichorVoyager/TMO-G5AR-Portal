@@ -200,6 +200,12 @@ src/
     └── use-router-data.ts # SWR hooks for router data
 ```
 
+## Project provenance
+
+Metameros Network began as a fork of
+[rchen14b/TMO-G5AR-Portal](https://github.com/rchen14b/TMO-G5AR-Portal). The full
+history and contributor authorship are preserved. See [NOTICE.md](NOTICE.md).
+
 ## License
 
-MIT
+MIT. See [LICENSE](LICENSE).
