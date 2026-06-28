@@ -35,6 +35,10 @@ services:
       - TS_AUTHKEY=${TS_AUTHKEY}
       - TS_STATE_DIR=/var/lib/tailscale
       - TS_USERSPACE=false
+      # Apply this compose-declared config idempotently on every (re)create.
+      # Without it, `tailscale up` aborts when the persisted state has non-default
+      # settings (e.g. accept-dns) that the boot command doesn't re-specify.
+      - TS_EXTRA_ARGS=--reset
     volumes:
       - tailscale-state:/var/lib/tailscale
     devices:
