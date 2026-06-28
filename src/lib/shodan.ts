@@ -11,6 +11,25 @@ const IP_ECHO_URL = "https://api.ipify.org?format=json"
 // Phase 2: keyed Shodan REST API (spends credits). See docs/shodan-exposure.md.
 const SHODAN_API_BASE = "https://api.shodan.io"
 
+// Outbound requests are pinned to these known, fixed API hosts. User input only
+// ever fills the path/query (and is separately validated as an IPv4), so the host
+// can't be changed by interpolation today — but enforcing an allowlist here is a
+// hard SSRF backstop: these helpers can never be pointed at an attacker-chosen
+// origin, regardless of how a future caller builds the URL.
+const ALLOWED_FETCH_HOSTS = new Set(["internetdb.shodan.io", "api.ipify.org", "api.shodan.io"])
+
+function assertAllowedUrl(url: string): void {
+  let parsed: URL
+  try {
+    parsed = new URL(url)
+  } catch {
+    throw new Error("Invalid request URL")
+  }
+  if (parsed.protocol !== "https:" || !ALLOWED_FETCH_HOSTS.has(parsed.hostname)) {
+    throw new Error(`Refusing to fetch disallowed URL host: ${parsed.hostname}`)
+  }
+}
+
 export type ExposureSource = "manual" | "override" | "detected"
 
 export interface InternetDbResult {
@@ -43,6 +62,7 @@ async function fetchWithTimeout(
   timeoutMs = REQUEST_TIMEOUT_MS,
   init: { method?: string; body?: BodyInit } = {}
 ): Promise<Response> {
+  assertAllowedUrl(url)
   const controller = new AbortController()
   const timeoutId = setTimeout(() => controller.abort(), timeoutMs)
   try {
