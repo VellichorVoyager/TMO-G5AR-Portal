@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start -H 0.0.0.0",
     "lint": "next lint",
-    "test": "tsx --test \"src/lib/**/*.test.ts\""
+    "test": "tsx --test src/lib/*.test.ts"
   },
   "dependencies": {
     "@radix-ui/react-progress": "^1.1.8",
